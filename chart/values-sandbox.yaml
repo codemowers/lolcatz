@@ -1,4 +1,4 @@
-# Overrides for a platform-manager sandbox. Set the two per-sandbox values on
+# Overrides for a platform-manager sandbox. Set the three per-sandbox values on
 # install, e.g. for namespace sb-372e59-liivakast on aws-us-west-2-bravo:
 #
 #   helm install lolcatz ./chart -n sb-372e59-liivakast -f chart/values-sandbox.yaml \
@@ -11,8 +11,8 @@
 # key plus `-rw`, the address is `ingressAddress` and the host is
 # `oidcIssuerHost`.
 #
-# The requests add up to about 1.5 CPU and 3.2Gi memory, so a medium sandbox
-# is the smallest that fits.
+# The requests add up to about 1.5 CPU and 3.2Gi memory, which fits a small
+# sandbox (2 CPU, 4Gi) alongside the platform's own Prometheus and registry.
 
 storage:
   # Sandboxes cap each bucket at 10Gi.
