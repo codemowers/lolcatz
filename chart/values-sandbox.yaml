@@ -3,11 +3,13 @@
 #
 #   helm install lolcatz ./chart -n sb-372e59-liivakast -f chart/values-sandbox.yaml \
 #     --set storage.existingPolicy=372e59-liivakast-rw \
-#     --set oidcIssuerAccess.ingressAddress=10.100.174.227
+#     --set oidcIssuerAccess.ingressAddress=10.100.174.227 \
+#     --set oidcIssuerAccess.host=auth.aws-us-west-2-bravo.codemowers.io
 #
-# The policy is the `sandbox` key of the namespace's `sandbox-info` ConfigMap
-# plus `-rw`. The ingress address is the cluster ingress Service's ClusterIP
-# (traefik/traefik on the codemowers clusters).
+# All three come from the namespace's `sandbox-info` ConfigMap
+# (`kubectl get configmap sandbox-info -o yaml`): the policy is its `sandbox`
+# key plus `-rw`, the address is `ingressAddress` and the host is
+# `oidcIssuerHost`.
 #
 # The requests add up to about 1.5 CPU and 3.2Gi memory, so a medium sandbox
 # is the smallest that fits.
@@ -24,5 +26,5 @@ redpanda:
   storage: 5Gi
 
 oidcIssuerAccess:
-  host: auth.aws-us-west-2-bravo.codemowers.io
+  host: ""
   ingressAddress: ""
