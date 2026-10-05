@@ -18,12 +18,7 @@ spec:
         enabled: true
         secretRef: lolcatz-redpanda-users
     resources:
-      requests:
-        cpu: 500m
-        memory: 1Gi
-      limits:
-        cpu: "1"
-        memory: 1Gi
+      {{- toYaml .Values.redpanda.resources | nindent 6 }}
     storage:
       persistentVolume:
-        size: 10Gi
+        size: {{ .Values.redpanda.storage }}

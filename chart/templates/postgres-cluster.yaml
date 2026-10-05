@@ -25,7 +25,7 @@ spec:
       localeCollate: C
       owner: lolcatz
   storage:
-    size: 10Gi
+    size: {{ .Values.database.storage }}
   resources:
     requests:
       memory: 256Mi

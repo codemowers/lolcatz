@@ -10,7 +10,9 @@ spec:
     metadata:
       labels:
         app: lolcatz-comments
+        {{- with include "lolcatz.oidcIssuerLabels" . }}{{ . | nindent 8 }}{{ end }}
     spec:
+      {{- with include "lolcatz.oidcIssuerHostAliases" . }}{{ . | nindent 6 }}{{ end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
