@@ -35,3 +35,35 @@ insightfaceModel:
   image: lolcatz-insightface-model:latest
 frontend:
   image: lolcatz-frontend:latest
+
+storage:
+  # Bucket quota in whole bytes.
+  quota: 100000000000
+  # Attach this existing S3 Policy to the storage user instead of creating
+  # the chart's own. A platform-manager sandbox allows only its own
+  # `<sandbox>-rw` policy (the `sandbox` key of its `sandbox-info` ConfigMap,
+  # plus `-rw`).
+  existingPolicy: ""
+
+database:
+  storage: 10Gi
+
+redpanda:
+  storage: 10Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# Pods that call the OIDC issuer (the frontend and the APIs validating access
+# tokens) need egress to it where the namespace isolates egress, as
+# platform-manager sandboxes do. Setting `ingressAddress` labels those pods
+# `codemowers.io/oidc-issuer-access: "true"` and resolves `host` to that
+# address, the cluster ingress Service's ClusterIP.
+oidcIssuerAccess:
+  host: ""
+  ingressAddress: ""
+

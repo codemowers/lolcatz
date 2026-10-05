@@ -1,0 +1,28 @@
+# Overrides for a platform-manager sandbox. Set the two per-sandbox values on
+# install, e.g. for namespace sb-372e59-liivakast on aws-us-west-2-bravo:
+#
+#   helm install lolcatz ./chart -n sb-372e59-liivakast -f chart/values-sandbox.yaml \
+#     --set storage.existingPolicy=372e59-liivakast-rw \
+#     --set oidcIssuerAccess.ingressAddress=10.100.174.227
+#
+# The policy is the `sandbox` key of the namespace's `sandbox-info` ConfigMap
+# plus `-rw`. The ingress address is the cluster ingress Service's ClusterIP
+# (traefik/traefik on the codemowers clusters).
+#
+# The requests add up to about 1.5 CPU and 3.2Gi memory, so a medium sandbox
+# is the smallest that fits.
+
+storage:
+  # Sandboxes cap each bucket at 10Gi.
+  quota: 5368709120
+  existingPolicy: ""
+
+database:
+  storage: 5Gi
+
+redpanda:
+  storage: 5Gi
+
+oidcIssuerAccess:
+  host: auth.aws-us-west-2-bravo.codemowers.io
+  ingressAddress: ""

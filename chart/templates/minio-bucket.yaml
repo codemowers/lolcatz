@@ -6,4 +6,4 @@ spec:
   name: {{ .Release.Namespace }}.lolcatz
   s3InstanceRef: minio/default
   quota:
-    default: 100000000000
+    default: {{ int64 .Values.storage.quota }}
