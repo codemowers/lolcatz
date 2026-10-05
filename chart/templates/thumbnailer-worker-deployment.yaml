@@ -75,9 +75,4 @@ spec:
                   name: lolcatz-storage
                   key: region
           resources:
-            requests:
-              memory: 256Mi
-              cpu: 100m
-            limits:
-              memory: 2Gi
-              cpu: '2'
+            {{- toYaml .Values.thumbnailerWorker.resources | nindent 12 }}

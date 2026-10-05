@@ -8,25 +8,96 @@ imagePullSecrets: []
 
 uploader:
   image: lolcatz-uploader:latest
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 500m
 browse:
   image: lolcatz-browse:latest
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 500m
 search:
   image: lolcatz-search:latest
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 500m
 comments:
   image: lolcatz-comments:latest
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 500m
 admin:
   enabled: true
   image: lolcatz-admin:latest
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 500m
 tagger:
   image: lolcatz-tagger:latest
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 2Gi
+      cpu: '2'
 taggerModel:
   image: lolcatz-tagger-model:latest
 thumbnailer:
   image: lolcatz-thumbnailer:latest
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 2Gi
+      cpu: '2'
+thumbnailerWorker:
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 2Gi
+      cpu: '2'
 ocr:
   image: lolcatz-ocr:latest
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 1Gi
+      cpu: '2'
 exif:
   image: lolcatz-exif:latest
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 500m
 insightface:
   # Set true when adding the local exercise implementation.
   enabled: false
@@ -35,6 +106,13 @@ insightfaceModel:
   image: lolcatz-insightface-model:latest
 frontend:
   image: lolcatz-frontend:latest
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 512Mi
+      cpu: 500m
 
 storage:
   # Bucket quota in whole bytes.
@@ -47,6 +125,22 @@ storage:
 
 database:
   storage: 10Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 1Gi
+      cpu: 1000m
+
+redis:
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 512Mi
+      cpu: 500m
 
 redpanda:
   storage: 10Gi

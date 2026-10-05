@@ -93,9 +93,4 @@ spec:
                   name: lolcatz-storage
                   key: secretKey
           resources:
-            requests:
-              memory: 64Mi
-              cpu: 50m
-            limits:
-              memory: 256Mi
-              cpu: 500m
+            {{- toYaml .Values.browse.resources | nindent 12 }}

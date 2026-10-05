@@ -41,12 +41,7 @@ spec:
               path: /health
               port: metrics
           resources:
-            requests:
-              memory: 64Mi
-              cpu: 50m
-            limits:
-              memory: 256Mi
-              cpu: 500m
+            {{- toYaml .Values.admin.resources | nindent 12 }}
           volumeMounts:
             - name: server-tls
               mountPath: /etc/server-tls

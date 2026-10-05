@@ -27,9 +27,4 @@ spec:
   storage:
     size: {{ .Values.database.storage }}
   resources:
-    requests:
-      memory: 256Mi
-      cpu: 100m
-    limits:
-      memory: 1Gi
-      cpu: 1000m
+    {{- toYaml .Values.database.resources | nindent 4 }}

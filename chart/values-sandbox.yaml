@@ -11,16 +11,19 @@
 # key plus `-rw`, the address is `ingressAddress` and the host is
 # `oidcIssuerHost`.
 #
-# The requests add up to about 1.5 CPU and 3.2Gi memory, which fits a small
-# sandbox (2 CPU, 4Gi) alongside the platform's own Prometheus and registry.
+# CPU requests are about a third of the defaults, about 1 CPU in all with
+# 3.2Gi memory, so many sandboxes can share a cluster; limits are unchanged,
+# so an idle app still bursts when used. Redpanda keeps 500m, since its chart
+# derives the broker's core count from its CPU resources.
 
 storage:
-  # Sandboxes cap each bucket at 10Gi.
-  quota: 5368709120
+  # Sandboxes cap each bucket at 10Gi; many sandboxes share one object store.
+  quota: 1073741824
   existingPolicy: ""
 
 database:
   storage: 5Gi
+  resources: {requests: {cpu: 50m}}
 
 redpanda:
   storage: 5Gi
@@ -28,3 +31,16 @@ redpanda:
 oidcIssuerAccess:
   host: ""
   ingressAddress: ""
+
+uploader: {resources: {requests: {cpu: 25m}}}
+browse: {resources: {requests: {cpu: 25m}}}
+search: {resources: {requests: {cpu: 25m}}}
+comments: {resources: {requests: {cpu: 25m}}}
+admin: {resources: {requests: {cpu: 25m}}}
+exif: {resources: {requests: {cpu: 25m}}}
+frontend: {resources: {requests: {cpu: 25m}}}
+ocr: {resources: {requests: {cpu: 50m}}}
+thumbnailer: {resources: {requests: {cpu: 50m}}}
+thumbnailerWorker: {resources: {requests: {cpu: 50m}}}
+tagger: {resources: {requests: {cpu: 100m}}}
+redis: {resources: {requests: {cpu: 25m}}}

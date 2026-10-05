@@ -68,9 +68,4 @@ spec:
                   name: oidc-client-lolcatz-frontend-owner-secrets
                   key: OIDC_IDP_URI
           resources:
-            requests:
-              memory: 64Mi
-              cpu: 50m
-            limits:
-              memory: 256Mi
-              cpu: 500m
+            {{- toYaml .Values.comments.resources | nindent 12 }}

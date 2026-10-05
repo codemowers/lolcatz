@@ -91,9 +91,4 @@ spec:
             - name: tmp
               mountPath: /tmp
           resources:
-            requests:
-              memory: 512Mi
-              cpu: 250m
-            limits:
-              memory: 2Gi
-              cpu: "2"
+            {{- toYaml .Values.tagger.resources | nindent 12 }}
