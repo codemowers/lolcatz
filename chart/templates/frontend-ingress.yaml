@@ -63,4 +63,4 @@ spec:
   tls:
     - hosts:
         - {{ .Values.domain }}
-      secretName: lolcatz-frontend-public-tls
+      secretName: {{ .Values.tls.existingSecret | default "lolcatz-frontend-public-tls" }}

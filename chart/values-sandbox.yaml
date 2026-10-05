@@ -16,6 +16,11 @@
 # so an idle app still bursts when used. Redpanda keeps 500m, since its chart
 # derives the broker's core count from its CPU resources.
 
+# The sandbox's wildcard certificate covers `<domain>.<namespace>.<suffix>`
+# (sandbox-info `wildcardTLSSecret`), so the chart requests no certificate.
+tls:
+  existingSecret: sandbox-wildcard-tls
+
 storage:
   # Sandboxes cap each bucket at 10Gi; many sandboxes share one object store.
   quota: 1073741824
