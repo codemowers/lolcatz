@@ -1,5 +1,12 @@
 domain: can-i-haz-kubernetes
 
+tls:
+  # Serve this existing TLS Secret on the public Ingress instead of issuing a
+  # certificate for `domain`. A platform-manager sandbox provides one for every
+  # host in it (`wildcardTLSSecret` in its sandbox-info ConfigMap), which saves
+  # a Let's Encrypt certificate per install.
+  existingSecret: ""
+
 # Registry/namespace prefix for short image names. Full image paths override it.
 imageRegistry: ghcr.io/codemowers
 

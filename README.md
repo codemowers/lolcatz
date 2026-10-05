@@ -88,8 +88,9 @@ HTTP without TLS.
 [Chart values](chart/values.yaml) define image overrides and optional components.
 [Sandbox values](chart/values-sandbox.yaml) fit the chart into a
 platform-manager sandbox: smaller volumes, a bucket within the sandbox quota,
-the sandbox's own S3 policy, and egress to the OIDC issuer. A small sandbox
-is enough.
+the sandbox's own S3 policy, egress to the OIDC issuer, and the sandbox's
+wildcard certificate instead of a certificate of its own. A small sandbox is
+enough.
 [CI](.github/workflows/images.yaml) tests the application and publishes
 `ghcr.io/<repository-owner>/lolcatz-<service>` images for `v*` tags, with the
 version, commit SHA, and release tags. Main-branch builds are verified without
