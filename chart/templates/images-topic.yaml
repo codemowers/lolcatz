@@ -12,8 +12,5 @@ spec:
     clusterRef:
       name: lolcatz-redpanda
   partitions: 3
-  # One broker; the platform sets three where it runs Redpanda highly
-  # available. Left unset, the operator sends -1 and the topic never exists.
-  replicationFactor: 1
   additionalConfig:
     cleanup.policy: compact
