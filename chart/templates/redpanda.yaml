@@ -13,13 +13,6 @@ spec:
           caEnabled: true
           secretRef:
             name: lolcatz-redpanda-internal-tls
-        # There are no external listeners, but the chart renders this entry's
-        # certificate unless it points at a Secret, and that certificate's
-        # names fail sandbox-certificate-guard. Reuse the internal one.
-        external:
-          caEnabled: true
-          secretRef:
-            name: lolcatz-redpanda-internal-tls
     auth:
       sasl:
         enabled: true
