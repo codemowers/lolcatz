@@ -16,9 +16,6 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
-        runAsGroup: 65534
         seccompProfile:
           type: RuntimeDefault
       volumes:
@@ -29,9 +26,6 @@ spec:
         - name: frontend
           securityContext:
             readOnlyRootFilesystem: true
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: [ALL]
           image: {{ include "lolcatz.image" (dict "registry" .Values.imageRegistry "image" .Values.frontend.image) }}
           imagePullPolicy: Always
           ports:
