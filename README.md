@@ -83,8 +83,6 @@ are for debugging individual services. Prometheus metrics endpoints use plain
 HTTP without TLS.
 
 [Chart values](chart/values.yaml) define image overrides and optional components.
-[Sandbox values](chart/values-sandbox.yaml) lower the requests and volume
-sizes to fit a small platform-manager sandbox.
 [CI](.github/workflows/images.yaml) tests the application and publishes
 `ghcr.io/<repository-owner>/lolcatz-<service>` images for `v*` tags, with the
 version, commit SHA, and release tags. Main-branch builds are verified without
