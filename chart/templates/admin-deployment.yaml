@@ -17,6 +17,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
         seccompProfile:
           type: RuntimeDefault
       volumes:
@@ -34,6 +37,9 @@ spec:
               containerPort: 8080
           securityContext:
             readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           readinessProbe:
             httpGet:
               path: /health
