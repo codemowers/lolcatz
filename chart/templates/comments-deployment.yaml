@@ -16,6 +16,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
         seccompProfile:
           type: RuntimeDefault
       volumes:
@@ -26,6 +29,9 @@ spec:
         - name: comments
           securityContext:
             readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           image: {{ include "lolcatz.image" (dict "registry" .Values.imageRegistry "image" .Values.comments.image) }}
           imagePullPolicy: Always
           ports:
