@@ -17,6 +17,10 @@ spec:
   redirectUris:
     - https://{{ .Values.domain }}/api/auth/callback
   uri: https://{{ .Values.domain }}/
+  # The audience the browser asks a token for and the APIs validate (RFC 8707);
+  # clusters that require a resource allow-list refuse login without it.
+  allowedResources:
+    - https://{{ .Values.domain }}/api
   availableScopes:
     - openid
     - profile
