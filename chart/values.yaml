@@ -116,7 +116,7 @@ frontend:
 
 
 database:
-  storage: 10Gi
+  storage: 5Gi
   resources:
     requests:
       memory: 256Mi
@@ -135,7 +135,7 @@ redis:
       cpu: 500m
 
 redpanda:
-  storage: 10Gi
+  storage: 5Gi
   resources:
     requests:
       cpu: 500m
