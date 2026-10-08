@@ -13,7 +13,7 @@ uploader:
       memory: 64Mi
       cpu: 50m
     limits:
-      memory: 256Mi
+      memory: 128Mi
       cpu: 500m
 browse:
   image: lolcatz-browse:latest
@@ -22,7 +22,7 @@ browse:
       memory: 64Mi
       cpu: 50m
     limits:
-      memory: 256Mi
+      memory: 128Mi
       cpu: 500m
 search:
   image: lolcatz-search:latest
@@ -31,7 +31,7 @@ search:
       memory: 64Mi
       cpu: 50m
     limits:
-      memory: 256Mi
+      memory: 128Mi
       cpu: 500m
 comments:
   image: lolcatz-comments:latest
@@ -40,7 +40,7 @@ comments:
       memory: 64Mi
       cpu: 50m
     limits:
-      memory: 256Mi
+      memory: 128Mi
       cpu: 500m
 admin:
   enabled: true
@@ -50,7 +50,7 @@ admin:
       memory: 64Mi
       cpu: 50m
     limits:
-      memory: 256Mi
+      memory: 128Mi
       cpu: 500m
 tagger:
   image: lolcatz-tagger:latest
@@ -59,7 +59,7 @@ tagger:
       memory: 512Mi
       cpu: 250m
     limits:
-      memory: 2Gi
+      memory: 1Gi
       cpu: '2'
 taggerModel:
   image: lolcatz-tagger-model:latest
@@ -70,7 +70,7 @@ thumbnailer:
       memory: 256Mi
       cpu: 100m
     limits:
-      memory: 2Gi
+      memory: 768Mi
       cpu: '2'
 thumbnailerWorker:
   resources:
@@ -78,7 +78,7 @@ thumbnailerWorker:
       memory: 256Mi
       cpu: 100m
     limits:
-      memory: 2Gi
+      memory: 768Mi
       cpu: '2'
 ocr:
   image: lolcatz-ocr:latest
@@ -87,7 +87,7 @@ ocr:
       memory: 256Mi
       cpu: 100m
     limits:
-      memory: 1Gi
+      memory: 512Mi
       cpu: '2'
 exif:
   image: lolcatz-exif:latest
@@ -96,7 +96,7 @@ exif:
       memory: 64Mi
       cpu: 50m
     limits:
-      memory: 256Mi
+      memory: 128Mi
       cpu: 500m
 insightface:
   # Set true when adding the local exercise implementation.
@@ -111,7 +111,7 @@ frontend:
       memory: 128Mi
       cpu: 50m
     limits:
-      memory: 512Mi
+      memory: 256Mi
       cpu: 500m
 
 
@@ -122,7 +122,7 @@ database:
       memory: 256Mi
       cpu: 100m
     limits:
-      memory: 1Gi
+      memory: 512Mi
       cpu: 1000m
 
 redis:
@@ -131,7 +131,7 @@ redis:
       memory: 128Mi
       cpu: 50m
     limits:
-      memory: 512Mi
+      memory: 256Mi
       cpu: 500m
 
 redpanda:
