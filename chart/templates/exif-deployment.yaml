@@ -1,3 +1,4 @@
+{{- if eq (include "lolcatz.componentEnabled" (dict "name" "exif" "values" .Values)) "true" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -73,3 +74,4 @@ spec:
                   key: secretKey
           resources:
             {{- toYaml .Values.exif.resources | nindent 12 }}
+{{- end }}

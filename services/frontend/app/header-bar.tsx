@@ -32,7 +32,8 @@ export function HeaderBar() {
     if (trimmed) router.push(`/search?q=${encodeURIComponent(trimmed)}`);
   };
 
-  const authenticated = Boolean(devToken) || status === "authenticated";
+  // A failed refresh still reports "authenticated"; offer sign-in instead.
+  const authenticated = Boolean(devToken) || (status === "authenticated" && session?.error !== "RefreshTokenError");
   const label = devToken
     ? "developer@localhost"
     : session?.user?.name ?? session?.user?.email ?? "Profile";

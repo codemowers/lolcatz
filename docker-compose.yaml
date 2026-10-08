@@ -32,8 +32,8 @@ services:
     environment:
       TEST_DATABASE_URL: postgres://lolcatz:lolcatz@postgres:5432/lolcatz?sslmode=disable
     depends_on:
-      postgres:
-        condition: service_healthy
+      schema-init:
+        condition: service_completed_successfully
 
   rust-tools:
     image: rust:1.94.1-alpine
@@ -172,8 +172,8 @@ services:
 
   uploader:
     depends_on:
-      postgres:
-        condition: service_healthy
+      schema-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     build:
@@ -285,12 +285,11 @@ services:
       - /bin/sh
       - -ec
     command:
-      - psql -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS postgis' -f /schema/ocr.sql -f /schema/tagger.sql
+      - psql -v ON_ERROR_STOP=1 -f /schema/application.sql
     volumes:
-      - ./services/ocr/schema.sql:/schema/ocr.sql:ro
-      - ./services/tagger/schema.sql:/schema/tagger.sql:ro
+      - ./services/uploader/schema.sql:/schema/application.sql:ro
     depends_on:
-      uploader:
+      postgres:
         condition: service_healthy
 
   search:
@@ -491,7 +490,6 @@ services:
       NEXTAUTH_URL: http://localhost:3000
       BROWSE_URL: http://browse:8080
       NEXTAUTH_SECRET: local-development-only
-      HOSTNAME: "0.0.0.0"
 
   gateway:
     image: nginx:1.27-alpine

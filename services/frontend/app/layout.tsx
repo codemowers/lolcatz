@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Providers } from "./providers";
+import { Providers, SessionGuard } from "./providers";
 import { HeaderBar } from "./header-bar";
 import { Tagline } from "./tagline";
 import { noFlashScript } from "../lib/preferences";
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="board-nav">
             <Tagline />
           </div>
-          <main>{children}</main>
+          <main><SessionGuard>{children}</SessionGuard></main>
           <footer className="site-footer">
             <a className="source-link" href="https://github.com/codemowers/lolcatz" target="_blank" rel="noopener noreferrer" aria-label="codemowers/lolcatz on GitHub">
               <span className="github-logo" aria-hidden="true" /> codemowers/lolcatz

@@ -6,7 +6,6 @@ stores detections in Postgres and publishes all annotations to lolcatz-tags.
 import json
 import logging
 import os
-from pathlib import Path
 from image_input import InvalidImage, decode_image, read_bytes
 
 # Recorded on every row written. Bump it (or set PRODUCER_VERSION) when the
@@ -123,8 +122,6 @@ def main():
 
     db = psycopg2.connect(must_env("DATABASE_URL"))
     db.autocommit = True
-    with db.cursor() as cur:
-        cur.execute(Path(__file__).with_name("schema.sql").read_text())
     endpoint = must_env("S3_ENDPOINT")
     scheme = "https" if os.environ["S3_USE_SSL"] == "true" else "http"
     endpoint = f"{scheme}://{endpoint}"

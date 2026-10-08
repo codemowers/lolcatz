@@ -1,3 +1,4 @@
+{{- if eq (include "lolcatz.componentEnabled" (dict "name" "tagger" "values" .Values)) "true" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -92,3 +93,4 @@ spec:
               mountPath: /tmp
           resources:
             {{- toYaml .Values.tagger.resources | nindent 12 }}
+{{- end }}

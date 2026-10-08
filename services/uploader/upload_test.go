@@ -36,7 +36,7 @@ func uploadDatabase(t *testing.T) *sql.DB {
 	}
 	schema := fmt.Sprintf("upload_test_%d", time.Now().UnixNano())
 	q := u.Query()
-	q.Set("search_path", schema)
+	q.Set("search_path", schema+",public")
 	u.RawQuery = q.Encode()
 	connection, err := sql.Open("postgres", u.String())
 	if err != nil {

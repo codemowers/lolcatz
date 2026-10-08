@@ -1,6 +1,6 @@
 {{- if .Capabilities.APIVersions.Has "monitoring.coreos.com/v1/PodMonitor" }}
 {{- range $name := list "admin" "browse" "comments" "frontend" "search" "thumbnailer" "uploader" "exif" "ocr" "tagger" "thumbnailer-worker" }}
-{{- if or (ne $name "admin") $.Values.admin.enabled }}
+{{- if eq (include "lolcatz.componentEnabled" (dict "name" $name "values" $.Values)) "true" }}
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor

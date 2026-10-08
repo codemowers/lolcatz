@@ -1,6 +1,5 @@
 """OCR worker for captioned lolcat images."""
 
-from pathlib import Path
 import io
 import json
 import logging
@@ -102,8 +101,6 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     db = psycopg2.connect(env("DATABASE_URL"))
     db.autocommit = True
-    with db.cursor() as cur:
-        cur.execute(Path(__file__).with_name("schema.sql").read_text())
 
     endpoint = env("S3_ENDPOINT")
     scheme = "https" if os.environ["S3_USE_SSL"] == "true" else "http"

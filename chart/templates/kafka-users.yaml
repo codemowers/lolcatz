@@ -1,8 +1,11 @@
 {{- range $name := list "uploader" "exif" "ocr" "tagger" "thumbnailer-worker" }}
+{{- if eq (include "lolcatz.componentEnabled" (dict "name" $name "values" $.Values)) "true" }}
 ---
 apiVersion: cluster.redpanda.com/v1alpha2
 kind: User
 metadata:
+  labels:
+    skaffold.dev/keep: "true"
   name: lolcatz-{{ $name }}
 spec:
   cluster:
@@ -43,4 +46,5 @@ spec:
           - Read
           - Describe
       {{- end }}
+{{- end }}
 {{- end }}

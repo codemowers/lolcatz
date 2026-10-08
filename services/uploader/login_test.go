@@ -99,7 +99,7 @@ func TestLoginThenUploadWithoutEmail(t *testing.T) {
 		t.Fatal(err)
 	}
 	query := databaseURL.Query()
-	query.Set("search_path", schema)
+	query.Set("search_path", schema+",public")
 	databaseURL.RawQuery = query.Encode()
 	testDB, err := sql.Open("postgres", databaseURL.String())
 	if err != nil {

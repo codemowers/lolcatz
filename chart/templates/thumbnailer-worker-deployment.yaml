@@ -1,3 +1,4 @@
+{{- if eq (include "lolcatz.componentEnabled" (dict "name" "thumbnailer-worker" "values" .Values)) "true" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -76,3 +77,4 @@ spec:
                   key: region
           resources:
             {{- toYaml .Values.thumbnailerWorker.resources | nindent 12 }}
+{{- end }}

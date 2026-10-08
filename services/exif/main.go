@@ -53,34 +53,7 @@ var (
 	producerVersion string
 )
 
-// This service owns image_exif and nothing else; no other component may write
-// to it, and it writes to no other table.
-func initSchema() error {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS image_exif (
-			image_id         TEXT PRIMARY KEY REFERENCES images(id) ON DELETE CASCADE,
-			captured_at      TIMESTAMPTZ,
-			camera_make      TEXT,
-			camera_model     TEXT,
-			lens_model       TEXT,
-			software         TEXT,
-			width            INTEGER,
-			height           INTEGER,
-			orientation      INTEGER,
-			iso              INTEGER,
-			f_number         REAL,
-			exposure_seconds REAL,
-			focal_length_mm  REAL,
-			location         geometry(PointZ, 4326),
-			producer_version TEXT NOT NULL,
-			processed_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
-		);
-		CREATE INDEX IF NOT EXISTS image_exif_stale ON image_exif(producer_version);
-		CREATE INDEX IF NOT EXISTS image_exif_location ON image_exif USING GIST(location);
-	`)
-	return err
-}
-
+// This worker writes only image_exif; the core initializer creates its schema.
 func init() { log.SetFlags(0) }
 
 func mustEnv(key string) string {
@@ -114,9 +87,6 @@ func main() {
 		log.Fatalf("db ping: %v", err)
 	}
 	defer db.Close()
-	if err = initSchema(); err != nil {
-		log.Fatalf("initialize schema: %v", err)
-	}
 
 	producerVersion = getEnvOr("PRODUCER_VERSION", defaultProducerVersion)
 	bucket = mustEnv("S3_BUCKET")

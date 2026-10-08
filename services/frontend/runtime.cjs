@@ -8,15 +8,13 @@ const { instrument, metricsHandler } = require("./metrics.cjs");
 
 const { config } = require("./.next/required-server-files.json");
 process.env.__NEXT_PRIVATE_STANDALONE_CONFIG = JSON.stringify(config);
-const port = Number(process.env.PORT || 3000);
-const hostname = process.env.HOSTNAME || "::";
 const cert = process.env.TLS_CERT_FILE;
 const key = process.env.TLS_KEY_FILE;
 if (Boolean(cert) !== Boolean(key)) throw new Error("Configure both TLS_CERT_FILE and TLS_KEY_FILE");
 const credentials = () => ({ cert: fs.readFileSync(cert), key: fs.readFileSync(key) });
 
 async function main() {
-  const app = next({ dev: false, dir: __dirname, hostname, port });
+  const app = next({ dev: false, dir: __dirname, port: 3000 });
   await app.prepare();
   const handler = instrument(app.getRequestHandler());
   const tlsOptions = cert ? {
@@ -35,8 +33,11 @@ async function main() {
   } : null;
   const server = cert ? https.createServer(tlsOptions, handler) : http.createServer(handler);
   const metrics = http.createServer(metricsHandler);
-  metrics.listen(Number(process.env.METRICS_PORT || 9090), hostname);
-  server.listen(port, hostname);
+  // Omitting the host listens dual-stack, or IPv4 only where IPv6 is disabled.
+  metrics.listen(9090);
+  server.listen(3000, () => {
+    console.info(`Lolcatz available at ${process.env.NEXTAUTH_URL || `${cert ? "https" : "http"}://localhost:3000`}`);
+  });
   let closing = false;
   const shutdown = () => {
     if (closing) return;

@@ -1,6 +1,8 @@
 apiVersion: cluster.redpanda.com/v1alpha2
 kind: Topic
 metadata:
+  labels:
+    skaffold.dev/keep: "true"
   name: lolcatz-tags
   annotations:
     kubernetes.io/description: >-

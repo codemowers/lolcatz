@@ -1,7 +1,6 @@
 """Exercise the worker's real SQL without loading the ML runtime."""
 import json
 import os
-from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -24,9 +23,7 @@ class PersistenceTest(unittest.TestCase):
         try:
             with db.cursor() as cur:
                 cur.execute("CREATE TEMP TABLE images (id text PRIMARY KEY, board text); INSERT INTO images VALUES ('test', 'b');")
-                schema = Path(__file__).with_name("schema.sql").read_text().replace(
-                    "CREATE TABLE IF NOT EXISTS image_annotations", "CREATE TEMP TABLE image_annotations")
-                cur.execute(schema)
+                cur.execute("CREATE TEMP TABLE image_annotations (LIKE public.image_annotations INCLUDING ALL)")
             events = []
             producer = SimpleNamespace(produce=lambda *args, **kwargs: events.append((args, kwargs)))
             message = SimpleNamespace(value=lambda: b'{"id":"test","board":"b"}')

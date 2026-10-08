@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install --require-hashes -r r
     && pip install --no-index --no-deps -r requirements.txt
 
 COPY services/worker_runtime.py services/metrics.py services/image_input.py ./
-COPY --chmod=0644 services/tagger/tagger.py services/tagger/schema.sql ./
+COPY --chmod=0644 services/tagger/tagger.py ./
 
 # Static config baked into the image; only secrets and cluster-specific
 # endpoints stay in the chart. /tmp is a writable emptyDir at runtime.

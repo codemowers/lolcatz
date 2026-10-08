@@ -53,6 +53,7 @@ admin:
       memory: 128Mi
       cpu: 500m
 tagger:
+  enabled: false
   image: lolcatz-tagger:latest
   resources:
     requests:
@@ -73,6 +74,7 @@ thumbnailer:
       memory: 768Mi
       cpu: '2'
 thumbnailerWorker:
+  enabled: true
   resources:
     requests:
       memory: 256Mi
@@ -81,6 +83,7 @@ thumbnailerWorker:
       memory: 768Mi
       cpu: '2'
 ocr:
+  enabled: false
   image: lolcatz-ocr:latest
   resources:
     requests:
@@ -90,6 +93,7 @@ ocr:
       memory: 512Mi
       cpu: '2'
 exif:
+  enabled: true
   image: lolcatz-exif:latest
   resources:
     requests:

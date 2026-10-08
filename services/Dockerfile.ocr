@@ -12,7 +12,7 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install --require-hashes -r r
     && pip install --no-index --no-deps -r requirements.txt
 
 COPY services/worker_runtime.py services/metrics.py services/image_input.py ./
-COPY --chmod=0644 services/ocr/ocr.py services/ocr/schema.sql ./
+COPY --chmod=0644 services/ocr/ocr.py ./
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

@@ -1,3 +1,8 @@
+-- Complete fresh-install schema, initialized by the core uploader service.
+-- Optional workers own enrichment writes, not table creation. The database
+-- operator installs PostGIS; creating it here covers superuser dev databases.
+CREATE EXTENSION IF NOT EXISTS postgis SCHEMA public;
+
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     email TEXT UNIQUE,
@@ -56,3 +61,55 @@ CREATE TABLE IF NOT EXISTS image_outbox (
     image_id TEXT NOT NULL,
     payload BYTEA
 );
+
+CREATE TABLE IF NOT EXISTS image_exif (
+	image_id         TEXT PRIMARY KEY REFERENCES images(id) ON DELETE CASCADE,
+	captured_at      TIMESTAMPTZ,
+	camera_make      TEXT,
+	camera_model     TEXT,
+	lens_model       TEXT,
+	software         TEXT,
+	width            INTEGER,
+	height           INTEGER,
+	orientation      INTEGER,
+	iso              INTEGER,
+	f_number         REAL,
+	exposure_seconds REAL,
+	focal_length_mm  REAL,
+	location         geometry(PointZ, 4326),
+	producer_version TEXT NOT NULL,
+	processed_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS image_exif_stale ON image_exif(producer_version);
+CREATE INDEX IF NOT EXISTS image_exif_location ON image_exif USING GIST(location);
+
+CREATE TABLE IF NOT EXISTS image_ocr (
+    image_id         TEXT PRIMARY KEY REFERENCES images(id) ON DELETE CASCADE,
+    text             TEXT NOT NULL DEFAULT '',
+    language         TEXT,
+    derived_title    TEXT,
+    producer_version TEXT NOT NULL,
+    processed_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS image_ocr_stale ON image_ocr(producer_version);
+
+CREATE INDEX IF NOT EXISTS image_ocr_fts
+    ON image_ocr USING GIN (to_tsvector('simple', text));
+
+CREATE TABLE IF NOT EXISTS image_annotations (
+    id               BIGSERIAL PRIMARY KEY,
+    image_id         TEXT NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+    label            TEXT NOT NULL,
+    confidence       REAL NOT NULL,
+    x1               REAL NOT NULL CHECK (x1 >= 0 AND x1 <= 1),
+    y1               REAL NOT NULL CHECK (y1 >= 0 AND y1 <= 1),
+    x2               REAL NOT NULL CHECK (x2 >= 0 AND x2 <= 1),
+    y2               REAL NOT NULL CHECK (y2 >= 0 AND y2 <= 1),
+    producer_version TEXT NOT NULL,
+    processed_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS image_annotations_image ON image_annotations(image_id);
+
+CREATE INDEX IF NOT EXISTS image_annotations_label ON image_annotations(label);

@@ -2,6 +2,16 @@
 
 Build a Kubernetes-native Python service that adds real-time voting to Lolcatz.
 
+Follow [Codemowers Cloud sandbox](../README.md#codemowers-cloud-sandbox) for sandbox
+access, kubeconfig, `skaffold.env`, and starting Skaffold. Install Git, Docker,
+and Helm as well. To inspect workloads, logs and events, install
+[Lens](https://k8slens.dev/) for a GUI or [k9s](https://k9scli.io/) for a terminal UI.
+Create an exercise branch before making changes:
+
+```bash
+git switch -c paws-or-claws
+```
+
 ## Goal
 
 Users can give each image a thumbs-up or thumbs-down vote. When somebody votes, every browser displaying that image receives the new totals immediately without refreshing the page.
@@ -32,7 +42,7 @@ PostgreSQL stores the authoritative votes. Sanic validates the caller's access t
 
 EMQX owns the long-lived browser connections and message fan-out, so Sanic remains a stateless HTTP service and can be scaled without coordinating WebSocket clients between replicas.
 
-The EMQX Operator is already installed in the cluster. The application chart must declare its own `EMQX` custom resource, listener Service and Ingress. TLS terminates at the Ingress, and browsers connect using `wss://`.
+The EMQX Operator is already installed in the cluster. The application chart must declare its own `EMQX` custom resource and listener Service, and route `/mqtt` on the application's existing Ingress. TLS terminates at the Ingress, and browsers connect using `wss://`.
 
 Vote totals are publicly readable. Anonymous browser clients may use the HTTP read endpoint and subscribe to `lolcatz/images/+/votes`, but they may not publish or cast votes. Voting requires the existing Lolcatz OIDC session. Only the Sanic service receives credentials that permit publication to vote topics.
 
@@ -43,7 +53,7 @@ An IP address, browser cookie or `localStorage` value is not a reliable unique i
 ### Record a vote
 
 ```http
-POST /images/{image_id}/vote
+POST /api/voting/images/{image_id}/vote
 Content-Type: application/json
 Authorization: Bearer {access_token}
 
@@ -69,7 +79,7 @@ Example response:
 ### Read vote totals
 
 ```http
-GET /images/{image_id}/votes
+GET /api/voting/images/{image_id}/votes
 ```
 
 Example response:
@@ -85,18 +95,18 @@ Example response:
 ### Subscribe to live totals with MQTT
 
 ```text
-WebSocket endpoint: wss://{mqtt_host}/mqtt
+WebSocket endpoint: wss://{app_host}/mqtt
 MQTT topic:        lolcatz/images/{image_id}/votes
 ```
 
-The frontend connects with MQTT.js and subscribes to the topic for the displayed image. Sanic publishes the same JSON representation returned by its HTTP API after every successful vote.
+MQTT shares the application hostname, so the frontend connects to `/mqtt` on its own origin. It uses MQTT.js and subscribes to the topic for the displayed image. Sanic publishes the same JSON representation returned by its HTTP API after every successful vote.
 
 Publish the latest totals as a retained MQTT message. A newly connected browser then receives the current state immediately. The HTTP `GET` endpoint remains the authoritative fallback after connection or decoding failures.
 
 ### Health check
 
 ```http
-GET /healthz
+GET /api/voting/healthz
 ```
 
 The endpoint returns a successful response when the process is running. A follow-up task can add a separate readiness endpoint that checks PostgreSQL and EMQX connectivity.
@@ -153,41 +163,105 @@ Add the following resources to the application's Helm chart:
 
 1. An `apps.emqx.io/v2` `EMQX` custom resource with an MQTT-over-WebSocket listener.
 2. A listener Service exposing the EMQX WebSocket port inside the cluster.
-3. An Ingress routing `/mqtt` to that listener Service.
-4. A TLS certificate and secret for the public MQTT hostname.
-5. EMQX authorization rules allowing anonymous subscriptions to `lolcatz/images/+/votes` while denying anonymous publication.
-6. A Secret containing the Sanic service's MQTT publisher credentials.
+3. A `/mqtt` path on the existing `lolcatz-frontend` Ingress routing to that listener Service.
+4. EMQX authorization rules allowing anonymous subscriptions to `lolcatz/images/+/votes` while denying anonymous publication.
+5. A Secret containing the Sanic service's MQTT publisher credentials.
 
 The public endpoint must use `wss://`. TLS may terminate at the Ingress, with ordinary WebSocket traffic between the Ingress controller and the EMQX Service. The Ingress must preserve WebSocket upgrade headers.
 
-## Participant tasks
+## Implementation steps
 
-1. Add the `image_votes` table and its one-vote-per-user primary key.
-2. Verify the access token in Sanic and derive the voter ID from its issuer and subject claims.
-3. Implement the Sanic endpoint that validates and inserts an up or down vote.
-4. Map duplicate-vote constraint violations to HTTP `409 Conflict`.
-5. Implement the public endpoint that returns aggregate totals for an image.
-6. Add an EMQX custom resource and its listener Service to the Helm chart.
-7. Expose the WebSocket listener through a TLS-enabled Ingress.
-8. Publish the committed totals to the image's MQTT topic.
-9. Subscribe from the frontend using MQTT.js over `wss://`.
-10. Run the application through Skaffold and verify live updates in two authenticated browser sessions.
+1. Create `image_votes` in the voting service's fresh-install schema using the
+   data model above. Implement the HTTP contract in Sanic and commit each insert
+   before publishing totals. Accept only `{"vote":"up"}` or `{"vote":"down"}`.
+2. Validate access-token signature, issuer, expiry, the public origin plus `/api`
+   audience, and the required operation scope. Declare a voting scope in
+   `chart/templates/oidc-client.yaml` and enforce it in the API. Derive `voter_id`
+   from verified `iss` and `sub`; never accept voter identity from the request
+   body, an IP address, a cookie, or `localStorage`.
+3. Add the Python dependencies, Dockerfile, Deployment, and Service. Consume
+   operator-provisioned settings as the other services do:
 
-## Provided scaffolding
+   | Secret | Key | Purpose |
+   |---|---|---|
+   | `lolcatz-database-app` | `uri` | PostgreSQL connection URL |
+   | `oidc-client-lolcatz-frontend-owner-secrets` | `OIDC_IDP_URI` | OIDC issuer |
+   | `oidc-client-lolcatz-frontend-owner-secrets` | `OIDC_CLIENT_ORIGIN` | Public origin; audience is this plus `/api` |
 
-To keep the exercise achievable during the workshop, provide:
+   Set `readOnlyRootFilesystem: true` on the container and mount an `emptyDir`
+   at `/tmp`. Follow the platform's admission defaults for pod security.
+4. Add the short image name `lolcatz-voting` to `skaffold.yaml`; Skaffold prefixes
+   it with `SKAFFOLD_DEFAULT_REPO`. Route `/api/voting` to the voting Service in
+   `chart/templates/frontend-ingress.yaml`, preserving the full path.
+5. Declare the EMQX resources listed above, including publisher credentials and
+   authorization. Route `/mqtt` to the EMQX listener in
+   `chart/templates/frontend-ingress.yaml`, next to `/api/voting`; it reuses the
+   application hostname and certificate. Connect the frontend to
+   `wss://${window.location.host}/mqtt`.
+6. Publish totals with QoS 1 and `retain=true` after each successful commit.
+   Add vote buttons and MQTT.js subscriptions for the displayed image, falling
+   back to the HTTP read endpoint after connection or decoding failures.
+7. Follow the existing direct OAuth pattern: NextAuth owns login and renewal;
+   the browser sends its access token directly to the voting API. Keep refresh
+   tokens, ID tokens, client secrets, database credentials, and MQTT publisher
+   credentials server-side.
+8. Save working increments on your exercise branch:
 
-- a starter Sanic application with TODO markers;
-- frontend vote buttons and starter MQTT.js client code;
-- Python dependencies and a Dockerfile;
-- starter Kubernetes Deployment and Service templates;
-- a Skaffold artifact entry;
-- the PostgreSQL connection URL through an environment variable;
-- access to the existing OIDC issuer and frontend token-forwarding pattern;
-- the public MQTT hostname and certificate issuer; and
-- documentation for the installed EMQX Operator's custom resource.
+   ```bash
+   git add services chart skaffold.yaml
+   git commit -m "Add real-time image voting"
+   git push -u origin paws-or-claws
+   ```
 
-Participants configure the EMQX instance and secure Ingress as part of the application, but do not install the cluster-wide Operator.
+## Validation
+
+`skaffold dev` renders, builds and deploys the chart on every change; fix any
+errors it reports. Run the repository checks for every changed component. Add voting-service tests
+for invalid input, token validation, duplicate votes (including concurrent
+requests), and aggregate totals. Confirm workloads are ready in Lens, k9s, or
+with `kubectl get pods,ingress` in the sandbox context and namespace.
+
+With an existing image ID, the public health and totals endpoints should succeed.
+Load `skaffold.env` first when running commands outside Skaffold:
+
+```bash
+set -a
+source skaffold.env
+set +a
+
+export APP_HOST="$(kubectl --context "$SKAFFOLD_KUBE_CONTEXT" \
+  --namespace "$SKAFFOLD_NAMESPACE" \
+  get ingress lolcatz-frontend -o jsonpath='{.spec.rules[0].host}')"
+export IMAGE_ID='<existing-image-id>'
+curl --fail-with-body "https://${APP_HOST}/api/voting/healthz"
+curl --fail-with-body "https://${APP_HOST}/api/voting/images/${IMAGE_ID}/votes"
+
+export ACCESS_TOKEN='<access-token>'
+curl --fail-with-body -X POST \
+  "https://${APP_HOST}/api/voting/images/${IMAGE_ID}/vote" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H 'Content-Type: application/json' --data '{"vote":"up"}'
+```
+
+Verify `400` for invalid input, `401` without a token, `403` for a missing voting
+scope, `201` for the first vote, and `409` for another vote by that identity.
+Concurrent duplicate requests must create exactly one row.
+
+Open the same image in two authenticated browser sessions. Vote in one and check
+that both update immediately, totals survive reloads, and a new session receives
+the retained totals. Test anonymous MQTT subscription and rejected publication,
+and HTTP fallback when MQTT is unavailable.
+
+Scale the voting service and repeat the browser checks:
+
+```bash
+kubectl --context "$SKAFFOLD_KUBE_CONTEXT" \
+  --namespace "$SKAFFOLD_NAMESPACE" \
+  scale deployment lolcatz-voting --replicas=2
+kubectl --context "$SKAFFOLD_KUBE_CONTEXT" \
+  --namespace "$SKAFFOLD_NAMESPACE" \
+  rollout status deployment/lolcatz-voting
+```
 
 ## Acceptance criteria
 

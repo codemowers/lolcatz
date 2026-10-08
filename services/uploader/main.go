@@ -99,8 +99,16 @@ func main() {
 	if err = db.Ping(); err != nil {
 		log.Fatalf("db ping: %v", err)
 	}
-	if err = initSchema(db); err != nil {
-		log.Fatalf("initialize schema: %v", err)
+	// The database operator may still be installing PostGIS on a fresh install.
+	for attempt := 1; ; attempt++ {
+		if err = initSchema(db); err == nil {
+			break
+		}
+		if attempt == 30 {
+			log.Fatalf("initialize schema: %v", err)
+		}
+		log.Printf("initialize schema (retrying): %v", err)
+		time.Sleep(2 * time.Second)
 	}
 	cache = redis.NewClient(&redis.Options{Addr: getEnvOr("REDIS_ADDR", "lolcatz-redis:6379"), Password: os.Getenv("REDIS_PASSWORD"), TLSConfig: platform.ClientTLS(os.Getenv("REDIS_TLS") == "true")})
 

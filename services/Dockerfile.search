@@ -6,10 +6,8 @@ COPY services/search/src ./src
 RUN cargo fetch --locked
 COPY services/search/tests ./tests
 COPY services/search/Rocket.toml ./
-# Integration tests use the schemas owned by the existing services.
+# Integration tests use the complete core schema.
 COPY services/uploader/schema.sql /schemas/uploader.sql
-COPY services/ocr/schema.sql /schemas/ocr.sql
-COPY services/tagger/schema.sql /schemas/tagger.sql
 
 FROM source AS tests
 RUN cargo test --locked --no-run

@@ -6,3 +6,10 @@
 {{- .image -}}
 {{- end -}}
 {{- end -}}
+
+{{/* Components without an enabled value are always deployed. Component names
+are kebab-case; their values keys are camelCase. */}}
+{{- define "lolcatz.componentEnabled" -}}
+{{- $key := .name | replace "-" "_" | camelcase | untitle -}}
+{{- dig "enabled" true (index .values $key | default dict) -}}
+{{- end -}}

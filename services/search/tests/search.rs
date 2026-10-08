@@ -30,22 +30,17 @@ async fn public_search_and_metrics_contract() {
     let options: PgConnectOptions = url.parse().unwrap();
     let pool = PgPoolOptions::new()
         .max_connections(2)
-        .connect_with(options.options([("search_path", schema.as_str())]))
+        .connect_with(options.options([("search_path", format!("{schema},public").as_str())]))
         .await
         .unwrap();
-    let schemas = env::var("SEARCH_TEST_SCHEMA_DIR").ok().map(PathBuf::from);
-    for owner in ["uploader", "ocr", "tagger"] {
-        let path = match &schemas {
-            Some(dir) => dir.join(format!("{owner}.sql")),
-            None => {
-                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("../{owner}/schema.sql"))
-            }
-        };
-        sqlx::raw_sql(&std::fs::read_to_string(path).unwrap())
-            .execute(&pool)
-            .await
-            .unwrap();
-    }
+    let schema_path = match env::var("SEARCH_TEST_SCHEMA_DIR") {
+        Ok(dir) => PathBuf::from(dir).join("uploader.sql"),
+        Err(_) => PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../uploader/schema.sql"),
+    };
+    sqlx::raw_sql(&std::fs::read_to_string(schema_path).unwrap())
+        .execute(&pool)
+        .await
+        .unwrap();
     sqlx::raw_sql(r#"
         INSERT INTO images (id,board,title,filename,content_type,uploaded_at) VALUES
             ('first','b','Cat portrait','first.jpg','image/jpeg','2025-01-01T00:00:00Z'),
