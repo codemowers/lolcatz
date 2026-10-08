@@ -1,5 +1,8 @@
 # Can I haz Kubernetes?
 
+> **DIGIT 2026 workshop:** Follow the numbered
+> [Paws or Claws exercise guide](DIGIT2026.md).
+
 An image board demonstrating [Codemowers Cloud](https://codemowers.cloud/):
 direct browser uploads, searchable OCR, object detection, and asynchronous image
 processing on Kubernetes.
