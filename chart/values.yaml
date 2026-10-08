@@ -126,12 +126,14 @@ database:
       cpu: 1000m
 
 redis:
+  # Dragonfly needs 256MiB per thread and sizes maxmemory at 80% of the
+  # limit, so the limit must stay above 320Mi or it exits at start.
   resources:
     requests:
-      memory: 128Mi
+      memory: 192Mi
       cpu: 50m
     limits:
-      memory: 256Mi
+      memory: 384Mi
       cpu: 500m
 
 redpanda:
