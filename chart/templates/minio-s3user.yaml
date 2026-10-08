@@ -6,6 +6,4 @@ spec:
   s3InstanceRef: minio/default
   accessKey: {{ .Release.Namespace }}.lolcatz-storage
   policies:
-    # The sandbox's platform-rendered policy: read/write on every bucket of
-    # the namespace. Sandboxes cannot create policies of their own.
-    - {{ trimPrefix "sb-" .Release.Namespace }}-rw
+    - {{ .Release.Namespace }}.to.{{ .Release.Namespace }}.lolcatz-storage
