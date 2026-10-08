@@ -6,4 +6,4 @@ spec:
   s3InstanceRef: minio/default
   accessKey: {{ .Release.Namespace }}.lolcatz-storage
   policies:
-    - {{ .Values.storage.existingPolicy | default (printf "%s.to.%s.lolcatz-storage" .Release.Namespace .Release.Namespace) }}
+    - {{ .Release.Namespace }}.to.{{ .Release.Namespace }}.lolcatz-storage

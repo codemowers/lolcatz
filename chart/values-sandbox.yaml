@@ -1,30 +1,10 @@
-# Overrides for a platform-manager sandbox. Set the three per-sandbox values on
-# install, e.g. for namespace sb-372e59-liivakast on aws-us-west-2-bravo:
+# Lighter requests for a platform-manager sandbox, whose ResourceQuota is
+# 2 CPU / 4Gi / 20Gi of volumes for the small size. Limits are unchanged.
 #
-#   helm install lolcatz ./chart -n sb-372e59-liivakast -f chart/values-sandbox.yaml \
-#     --set storage.existingPolicy=372e59-liivakast-rw \
-#     --set oidcIssuerAccess.ingressAddress=10.100.174.227 \
-#     --set oidcIssuerAccess.host=auth.aws-us-west-2-bravo.codemowers.io
+#   helm install lolcatz ./chart -n <sandbox-namespace> -f chart/values-sandbox.yaml
 #
-# All three come from the namespace's `sandbox-info` ConfigMap
-# (`kubectl get configmap sandbox-info -o yaml`): the policy is its `sandbox`
-# key plus `-rw`, the address is `ingressAddress` and the host is
-# `oidcIssuerHost`.
-#
-# CPU requests are about a third of the defaults, about 1 CPU in all with
-# 3.2Gi memory, so many sandboxes can share a cluster; limits are unchanged,
-# so an idle app still bursts when used. Redpanda keeps 500m, since its chart
-# derives the broker's core count from its CPU resources.
-
-# The sandbox's wildcard certificate covers `<domain>.<namespace>.<suffix>`
-# (sandbox-info `wildcardTLSSecret`), so the chart requests no certificate.
-tls:
-  existingSecret: sandbox-wildcard-tls
-
-storage:
-  # Sandboxes cap each bucket at 10Gi; many sandboxes share one object store.
-  quota: 1073741824
-  existingPolicy: ""
+# Redpanda keeps 500m: its chart derives the broker's core count from its CPU
+# request.
 
 database:
   storage: 5Gi
@@ -32,10 +12,6 @@ database:
 
 redpanda:
   storage: 5Gi
-
-oidcIssuerAccess:
-  host: ""
-  ingressAddress: ""
 
 uploader: {resources: {requests: {cpu: 25m}}}
 browse: {resources: {requests: {cpu: 25m}}}
