@@ -13,10 +13,21 @@ spec:
           caEnabled: true
           secretRef:
             name: lolcatz-redpanda-internal-tls
+        # There are no external listeners, but the chart renders this entry's
+        # certificate unless it points at a Secret, and that certificate's
+        # names fail sandbox-certificate-guard. Reuse the internal one.
+        external:
+          caEnabled: true
+          secretRef:
+            name: lolcatz-redpanda-internal-tls
     auth:
       sasl:
         enabled: true
         secretRef: lolcatz-redpanda-users
+    # One broker; the platform raises this to three where it runs Redpanda
+    # highly available (codemowers-kube redpanda-replicas).
+    statefulset:
+      replicas: 1
     resources:
       {{- toYaml .Values.redpanda.resources | nindent 6 }}
     storage:
