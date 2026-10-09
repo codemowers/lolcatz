@@ -171,12 +171,14 @@ The public endpoint must use `wss://`. TLS may terminate at the Ingress, with or
 
 ## Implementation steps
 
-1. Create `image_votes` in the voting service's fresh-install schema using the
-   data model above. Implement the HTTP contract in Sanic and commit each insert
-   before publishing totals. Accept only `{"vote":"up"}` or `{"vote":"down"}`.
+1. Add `image_votes` to the fresh-install schema in
+   `services/uploader/schema.sql` using the data model above. Implement the HTTP
+   contract in Sanic and commit each insert before publishing totals. Accept
+   only `{"vote":"up"}` or `{"vote":"down"}`.
 2. Validate access-token signature, issuer, expiry, the public origin plus `/api`
    audience, and the required operation scope. Declare a voting scope in
-   `chart/templates/oidc-client.yaml` and enforce it in the API. Derive `voter_id`
+   `chart/templates/oidc-client.yaml`, request it in
+   `services/frontend/lib/auth.ts` and enforce it in the API. Derive `voter_id`
    from verified `iss` and `sub`; never accept voter identity from the request
    body, an IP address, a cookie, or `localStorage`.
 3. Add the Python dependencies, Dockerfile, Deployment, and Service. Consume
