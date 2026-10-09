@@ -72,9 +72,12 @@ presigned URLs. Metadata lives in PostgreSQL (with PostGIS and pgvector),
 caches in Dragonfly, and events in Redpanda. The uploader creates the complete
 [schema](services/uploader/schema.sql); workers only write enrichment results.
 
-Optional workers are toggled with `exif.enabled`, `ocr.enabled`, `tagger.enabled`
-and `thumbnailerWorker.enabled` in the [chart values](chart/values.yaml). OCR and
-the tagger default to off.
+Optional components are toggled with `admin.enabled`, `exif.enabled`,
+`ocr.enabled`, `tagger.enabled` and `thumbnailerWorker.enabled` in the
+[chart values](chart/values.yaml). OCR and the tagger default to off; Skaffold's
+default profile also turns off admin, EXIF and the thumbnail worker.
+`internalTLS.enabled` adds TLS between ingress, application services and
+server-side frontend calls; it defaults to off.
 
 ## Authentication
 
@@ -90,7 +93,8 @@ verify the token's audience (public origin plus `/api`) and operation scopes:
 | Post comments | `lolcatz:comments:write` |
 | Manage boards | `lolcatz:boards:write` and `github.com:codemowers:admins` membership |
 
-Browse and search are public.
+Browse and search are public. Managing boards requires the admin service
+(`admin.enabled`).
 
 ## Checks
 

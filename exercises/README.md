@@ -12,6 +12,8 @@ processing. OCR and YOLO skip corrupt or oversized image inputs while storage
 and database failures remain retryable.
 YOLO publishes replacement detections to `lolcatz-tags`; deletion tombstones
 retire derived data. Image bytes stay in S3 and metadata in PostgreSQL.
+In a sandbox, Skaffold deploys the EXIF, OCR, YOLO and thumbnail workers only
+with `skaffold dev -p full`.
 
 To replay a worker after changing its model, stop its consumer group, rewind its
 Kafka offsets, and restore its previous replica count. Use the cluster's Kafka
