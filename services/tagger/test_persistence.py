@@ -1,13 +1,16 @@
 """Exercise the worker's real SQL without loading the ML runtime."""
 import json
 import os
+from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+from uuid import uuid4
 
 from tagger import tagger
 
 import psycopg2
+from psycopg2 import sql
 
 
 @unittest.skipUnless(os.environ.get("TEST_DATABASE_URL"), "TEST_DATABASE_URL is not set")
@@ -20,10 +23,13 @@ class PersistenceTest(unittest.TestCase):
         self.enterContext(patch.object(tagger, "detect_annotations", return_value=detections))
         self.enterContext(patch.object(tagger, "PRODUCER_VERSION", "test"))
         db = psycopg2.connect(os.environ["TEST_DATABASE_URL"])
+        schema = sql.Identifier("tagger_test_" + uuid4().hex)
         try:
             with db.cursor() as cur:
-                cur.execute("CREATE TEMP TABLE images (id text PRIMARY KEY, board text); INSERT INTO images VALUES ('test', 'b');")
-                cur.execute("CREATE TEMP TABLE image_annotations (LIKE public.image_annotations INCLUDING ALL)")
+                cur.execute(sql.SQL("CREATE SCHEMA {}").format(schema))
+                cur.execute(sql.SQL("SET search_path TO {}, public").format(schema))
+                cur.execute((Path(__file__).resolve().parents[1] / "uploader" / "schema.sql").read_text())
+                cur.execute("INSERT INTO images (id, board, filename, content_type) VALUES ('test', 'b', 'cat.jpg', 'image/jpeg')")
             events = []
             producer = SimpleNamespace(produce=lambda *args, **kwargs: events.append((args, kwargs)))
             message = SimpleNamespace(value=lambda: b'{"id":"test","board":"b"}')
@@ -58,7 +64,11 @@ class PersistenceTest(unittest.TestCase):
                 self.assertEqual(cur.fetchone(), (0,))
         finally:
             db.rollback()
-            db.close()
+            try:
+                with db, db.cursor() as cur:
+                    cur.execute(sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(schema))
+            finally:
+                db.close()
 
 
 if __name__ == "__main__":

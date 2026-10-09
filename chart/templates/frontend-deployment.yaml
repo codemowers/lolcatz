@@ -18,10 +18,12 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- if .Values.internalTLS.enabled }}
       volumes:
         - name: server-tls
           secret:
             secretName: lolcatz-frontend-internal-tls
+      {{- end }}
       containers:
         - name: frontend
           securityContext:
@@ -31,26 +33,30 @@ spec:
           ports:
             - name: metrics
               containerPort: 9090
-            - name: https
+            - name: {{ include "lolcatz.internalScheme" . }}
               containerPort: 3000
           readinessProbe:
             httpGet:
               path: /health
               port: metrics
             initialDelaySeconds: 10
+          {{- if .Values.internalTLS.enabled }}
           volumeMounts:
             - name: server-tls
               mountPath: /etc/server-tls
               readOnly: true
+          {{- end }}
           env:
+            {{- if .Values.internalTLS.enabled }}
             - name: TLS_CERT_FILE
               value: /etc/server-tls/tls.crt
             - name: TLS_KEY_FILE
               value: /etc/server-tls/tls.key
+            {{- end }}
             - name: LOGIN_LINK_URL
-              value: https://lolcatz-uploader.{{ .Release.Namespace }}.svc.cluster.local:8080/api/upload/session
+              value: {{ include "lolcatz.internalScheme" . }}://lolcatz-uploader.{{ .Release.Namespace }}.svc.cluster.local:8080/api/upload/session
             - name: BROWSE_URL
-              value: https://lolcatz-browse.{{ .Release.Namespace }}.svc.cluster.local:8080
+              value: {{ include "lolcatz.internalScheme" . }}://lolcatz-browse.{{ .Release.Namespace }}.svc.cluster.local:8080
             - name: OIDC_PROVIDER_NAME
               valueFrom:
                 secretKeyRef:

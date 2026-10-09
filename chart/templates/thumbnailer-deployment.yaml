@@ -23,9 +23,11 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       volumes:
+        {{- if .Values.internalTLS.enabled }}
         - name: server-tls
           secret:
             secretName: lolcatz-thumbnailer-internal-tls
+        {{- end }}
         - name: tmp
           emptyDir:
             sizeLimit: 128Mi
@@ -38,7 +40,7 @@ spec:
           ports:
             - name: metrics
               containerPort: 9090
-            - name: https
+            - name: {{ include "lolcatz.internalScheme" . }}
               containerPort: 8080
           readinessProbe:
             httpGet:
@@ -46,10 +48,12 @@ spec:
               port: metrics
             initialDelaySeconds: 10
           env:
+            {{- if .Values.internalTLS.enabled }}
             - name: TLS_CERT_FILE
               value: /etc/server-tls/tls.crt
             - name: TLS_KEY_FILE
               value: /etc/server-tls/tls.key
+            {{- end }}
             - name: PGSSLMODE
               value: verify-full
             - name: DATABASE_URL
@@ -82,9 +86,11 @@ spec:
                   name: lolcatz-storage
                   key: region
           volumeMounts:
+            {{- if .Values.internalTLS.enabled }}
             - name: server-tls
               mountPath: /etc/server-tls
               readOnly: true
+            {{- end }}
             - name: tmp
               mountPath: /tmp
           resources:

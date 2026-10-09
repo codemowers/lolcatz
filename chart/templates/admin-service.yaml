@@ -3,14 +3,16 @@ apiVersion: v1
 kind: Service
 metadata:
   name: lolcatz-admin
+  {{- if .Values.internalTLS.enabled }}
   annotations:
     traefik.ingress.kubernetes.io/service.serversscheme: https
     traefik.ingress.kubernetes.io/service.serverstransport: {{ .Release.Namespace }}-lolcatz-admin@kubernetescrd
+  {{- end }}
 spec:
   selector:
     app: lolcatz-admin
   ports:
-    - name: https
+    - name: {{ include "lolcatz.internalScheme" . }}
       port: 8080
-      targetPort: https
+      targetPort: {{ include "lolcatz.internalScheme" . }}
 {{- end }}

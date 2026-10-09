@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import { requestJSON, isRequestError } from "../lib/api";
 import type { Board } from "../lib/boards";
+import { AdminLink } from "./admin-link";
 
 export function HeaderBar() {
   const pathname = usePathname();
@@ -72,7 +73,7 @@ export function HeaderBar() {
 
       {authenticated ? (
         <span className="auth-status">
-          <Link className="btn btn-ghost" href="/profile/boards">Manage boards</Link>
+          <AdminLink />
           <Link href="/profile" className="profile-link">
             {session?.user?.image && <img src={session.user.image} alt="" />}
             <span>{label}</span>

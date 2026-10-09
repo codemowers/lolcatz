@@ -95,8 +95,52 @@ test("admin denial and expired login have explicit states", async ({ page }) => 
   await expect(page.getByLabel("Slug")).toHaveCount(0);
   state.adminStatus = 401;
   await page.reload();
-  await expect(page.getByText("Your session has expired.")).toBeVisible();
+  await expect(page.getByText("Your session has expired.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+});
+
+test("admin controls wait for the availability probe", async ({ page }) => {
+  await mockApp(page);
+  let pending: Route | undefined;
+  await page.route("**/api/admin/me", route => { pending = route; });
+  await page.goto("/profile");
+  const control = page.locator("main .admin-action");
+  await expect(control.getByRole("button", { name: "Manage boards" })).toBeDisabled();
+  await control.focus();
+  await expect(control.getByRole("tooltip")).toHaveText("Checking board administration availability…");
+  await expect.poll(() => Boolean(pending)).toBe(true);
+  await pending!.fulfill({ json: { role: "admin" } });
+  await expect(page.locator("main").getByRole("link", { name: "Manage boards" })).toBeVisible();
+});
+
+for (const failure of [404, 503, "network"] as const) {
+  test(`admin controls are disabled when administration is unavailable (${failure})`, async ({ page }) => {
+    const state = await mockApp(page);
+    await page.route("**/api/admin/me", route => failure === "network"
+      ? route.abort("failed") : route.fulfill({ status: failure, body: "Unavailable" }));
+    await page.goto("/profile");
+    await expect(page.getByRole("button", { name: "Manage boards" })).toHaveCount(2);
+    const control = page.locator("main .admin-action");
+    await expect(control.getByRole("button")).toBeDisabled();
+    await expect(page.getByRole("link", { name: "Manage boards" })).toHaveCount(0);
+    await control.hover();
+    await expect(control.getByRole("tooltip")).toHaveText("Board administration is currently unavailable.");
+    await control.focus();
+    await expect(control.getByRole("tooltip")).toBeVisible();
+    state.adminStatus = 200;
+    await page.unroute("**/api/admin/me");
+    await page.getByRole("button", { name: "Try again" }).click();
+    await expect(page.getByRole("link", { name: "Manage boards" })).toHaveCount(2);
+  });
+}
+
+test("admin controls are hidden without permission", async ({ page }) => {
+  const state = await mockApp(page);
+  state.adminStatus = 403;
+  await page.goto("/profile");
+  await expect(page.getByText("You do not have access to manage boards.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Manage boards" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Manage boards" })).toHaveCount(0);
 });
 
 test("rejected replies preserve the draft and block duplicate submissions", async ({ page }) => {

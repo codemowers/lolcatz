@@ -1,7 +1,6 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
-import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import { usePreferences } from "../../lib/preferences";
@@ -10,6 +9,7 @@ import { Post, PostCard } from "../post-card";
 
 import { useAdminAccess } from "../../lib/admin-access";
 import { AdminStatus } from "../admin-status";
+import { AdminLink } from "../admin-link";
 import { useResource } from "../../lib/use-resource";
 import { request, errorMessage } from "../../lib/api";
 import { LoadError } from "../load-error";
@@ -89,7 +89,7 @@ done`;
     <div>
       <div className="page-head">
         <h2 className="page-title">Your profile</h2>
-        <Link className="btn btn-ghost" href="/profile/boards">Manage boards</Link>
+        <AdminLink />
       </div>
 
       <div className="segmented" role="tablist">

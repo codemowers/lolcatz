@@ -2,13 +2,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: lolcatz-comments
+  {{- if .Values.internalTLS.enabled }}
   annotations:
     traefik.ingress.kubernetes.io/service.serversscheme: https
     traefik.ingress.kubernetes.io/service.serverstransport: {{ .Release.Namespace }}-lolcatz-comments@kubernetescrd
+  {{- end }}
 spec:
   selector:
     app: lolcatz-comments
   ports:
-    - name: https
+    - name: {{ include "lolcatz.internalScheme" . }}
       port: 8080
-      targetPort: https
+      targetPort: {{ include "lolcatz.internalScheme" . }}

@@ -63,6 +63,11 @@ a { color:var(--accent-deep); }
   outline:2px solid var(--blue); outline-offset:3px; border-radius:999px;
 }
 .btn:disabled, input[type="file"]:disabled::file-selector-button { opacity:.5; cursor:not-allowed; }
+.admin-action { position:relative; display:inline-flex; cursor:not-allowed; }
+.admin-action:focus-visible { outline:2px solid var(--blue); outline-offset:3px; border-radius:999px; }
+.admin-action > button { pointer-events:none; }
+.admin-action-tooltip { display:none; position:absolute; top:calc(100% + 8px); right:0; z-index:20; width:max-content; max-width:min(260px, 80vw); padding:8px 12px; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface); color:var(--ink); font-size:13px; font-weight:400; white-space:normal; box-shadow:var(--shadow-sm); }
+.admin-action:hover .admin-action-tooltip, .admin-action:focus .admin-action-tooltip { display:block; }
 .btn-ghost, input[type="file"]::file-selector-button {
   color:var(--ink); background:var(--surface-2); border-color:var(--line-strong);
 }

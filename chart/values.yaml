@@ -1,5 +1,10 @@
 domain: can-i-haz-kubernetes
 
+# TLS between ingress, application services and server-side frontend calls.
+# Public ingress TLS and backing-service TLS are configured separately.
+internalTLS:
+  enabled: false
+
 # Registry/namespace prefix for short image names. Full image paths override it.
 imageRegistry: ghcr.io/codemowers
 
@@ -120,7 +125,7 @@ frontend:
 
 
 database:
-  storage: 5Gi
+  storage: 10Gi
   resources:
     requests:
       memory: 256Mi

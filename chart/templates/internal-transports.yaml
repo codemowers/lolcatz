@@ -1,3 +1,4 @@
+{{- if .Values.internalTLS.enabled }}
 {{- range $name := list "admin" "browse" "comments" "frontend" "search" "thumbnailer" "uploader" }}
 {{- if or (ne $name "admin") $.Values.admin.enabled }}
 ---
@@ -7,5 +8,6 @@ metadata:
   name: lolcatz-{{ $name }}
 spec:
   serverName: lolcatz-{{ $name }}.{{ $.Release.Namespace }}.svc.cluster.local
+{{- end }}
 {{- end }}
 {{- end }}

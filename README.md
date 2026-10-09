@@ -16,6 +16,8 @@ Follow the instructions on that site to:
 * Install the OIDC authentication plugin for kubectl.
 * Configure your Kubernetes client with the sandbox kubeconfig.
 * Set up `skaffold.env` in the project root.
+* Refer to [mcp.codemowers.io](https://mcp.codemowers.io) for platform guidance.
+* Connect to [mcp.driftmower.aws-us-west-2-bravo.codemowers.io](https://mcp.driftmower.aws-us-west-2-bravo.codemowers.io/).
 
 Proceed to build locally using Docker and deploy to sandbox with:
 
@@ -26,8 +28,8 @@ skaffold dev
 Open the URL in the frontend's startup log: `Lolcatz available at https://…`.
 Skaffold streams this log after the application starts.
 
-To fit the sandbox quota, Skaffold leaves OCR, the tagger and the thumbnail
-worker off. Build and deploy every component with:
+To fit the sandbox quota, Skaffold leaves admin, EXIF, OCR, the tagger and the
+thumbnail worker off. Build and deploy every component with:
 
 ```
 skaffold dev -p full

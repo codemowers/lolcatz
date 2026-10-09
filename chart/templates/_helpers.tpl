@@ -7,6 +7,11 @@
 {{- end -}}
 {{- end -}}
 
+{{/* Keep application listener names and internal URLs consistent. */}}
+{{- define "lolcatz.internalScheme" -}}
+{{- ternary "https" "http" .Values.internalTLS.enabled -}}
+{{- end -}}
+
 {{/* Components without an enabled value are always deployed. Component names
 are kebab-case; their values keys are camelCase. */}}
 {{- define "lolcatz.componentEnabled" -}}

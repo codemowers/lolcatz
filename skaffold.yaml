@@ -35,19 +35,9 @@ build:
         dockerfile: services/Dockerfile.golang
         buildArgs:
           SERVICE: comments
-    - image: lolcatz-admin
-      docker:
-        dockerfile: services/Dockerfile.golang
-        buildArgs:
-          SERVICE: admin
     - image: lolcatz-thumbnailer
       docker:
         dockerfile: services/Dockerfile.thumbnailer
-    - image: lolcatz-exif
-      docker:
-        dockerfile: services/Dockerfile.golang
-        buildArgs:
-          SERVICE: exif
     - image: lolcatz-frontend
       docker:
         dockerfile: services/Dockerfile.frontend
@@ -64,6 +54,8 @@ manifests:
           imageRegistry: ""
           # Leave room for PostgreSQL in the sandbox memory quota.
           thumbnailerWorker.enabled: false
+          exif.enabled: false
+          admin.enabled: false
         # Helm test hooks and image volumes are outside automatic image replacement.
         setValueTemplates:
           frontend.image: "{{.IMAGE_FULLY_QUALIFIED_lolcatz_frontend}}"
@@ -75,11 +67,27 @@ deploy:
       delete:
         - --selector=skaffold.dev/keep!=true
 
-# OCR, the tagger and the thumbnail worker are off by default; `skaffold dev -p full`
+# Admin, EXIF, OCR, the tagger and the thumbnail worker are off by default; `skaffold dev -p full`
 # builds and deploys every component.
 profiles:
   - name: full
     patches:
+      - op: add
+        path: /build/artifacts/-
+        value:
+          image: lolcatz-admin
+          docker:
+            dockerfile: services/Dockerfile.golang
+            buildArgs:
+              SERVICE: admin
+      - op: add
+        path: /build/artifacts/-
+        value:
+          image: lolcatz-exif
+          docker:
+            dockerfile: services/Dockerfile.golang
+            buildArgs:
+              SERVICE: exif
       - op: add
         path: /build/artifacts/-
         value:
@@ -100,6 +108,12 @@ profiles:
             dockerfile: services/Dockerfile.ocr
       - op: add
         path: /manifests/helm/releases/0/setValues/tagger.enabled
+        value: true
+      - op: replace
+        path: /manifests/helm/releases/0/setValues/exif.enabled
+        value: true
+      - op: replace
+        path: /manifests/helm/releases/0/setValues/admin.enabled
         value: true
       - op: add
         path: /manifests/helm/releases/0/setValues/ocr.enabled

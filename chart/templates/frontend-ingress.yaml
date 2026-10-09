@@ -15,35 +15,35 @@ spec:
               service:
                 name: lolcatz-browse
                 port:
-                  name: https
+                  name: {{ include "lolcatz.internalScheme" . }}
           - pathType: Prefix
             path: /api/thumbnails
             backend:
               service:
                 name: lolcatz-thumbnailer
                 port:
-                  name: https
+                  name: {{ include "lolcatz.internalScheme" . }}
           - pathType: Prefix
             path: /api/search
             backend:
               service:
                 name: lolcatz-search
                 port:
-                  name: https
+                  name: {{ include "lolcatz.internalScheme" . }}
           - pathType: Prefix
             path: /api/comments
             backend:
               service:
                 name: lolcatz-comments
                 port:
-                  name: https
+                  name: {{ include "lolcatz.internalScheme" . }}
           - pathType: Prefix
             path: /api/upload
             backend:
               service:
                 name: lolcatz-uploader
                 port:
-                  name: https
+                  name: {{ include "lolcatz.internalScheme" . }}
           {{- if .Values.admin.enabled }}
           - pathType: Prefix
             path: /api/admin
@@ -51,7 +51,7 @@ spec:
               service:
                 name: lolcatz-admin
                 port:
-                  name: https
+                  name: {{ include "lolcatz.internalScheme" . }}
           {{- end }}
           - pathType: Prefix
             path: /
@@ -59,7 +59,7 @@ spec:
               service:
                 name: lolcatz-frontend
                 port:
-                  name: https
+                  name: {{ include "lolcatz.internalScheme" . }}
   tls:
     - hosts:
         - {{ .Values.domain }}

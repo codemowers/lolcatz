@@ -19,10 +19,12 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- if .Values.internalTLS.enabled }}
       volumes:
         - name: server-tls
           secret:
             secretName: lolcatz-admin-internal-tls
+      {{- end }}
       containers:
         - name: admin
           image: {{ include "lolcatz.image" (dict "registry" .Values.imageRegistry "image" .Values.admin.image) }}
@@ -30,7 +32,7 @@ spec:
           ports:
             - name: metrics
               containerPort: 9090
-            - name: https
+            - name: {{ include "lolcatz.internalScheme" . }}
               containerPort: 8080
           securityContext:
             readOnlyRootFilesystem: true
@@ -40,15 +42,19 @@ spec:
               port: metrics
           resources:
             {{- toYaml .Values.admin.resources | nindent 12 }}
+          {{- if .Values.internalTLS.enabled }}
           volumeMounts:
             - name: server-tls
               mountPath: /etc/server-tls
               readOnly: true
+          {{- end }}
           env:
+            {{- if .Values.internalTLS.enabled }}
             - name: TLS_CERT_FILE
               value: /etc/server-tls/tls.crt
             - name: TLS_KEY_FILE
               value: /etc/server-tls/tls.key
+            {{- end }}
             - name: REDIS_TLS
               value: "true"
             - name: REDIS_PASSWORD

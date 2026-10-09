@@ -18,10 +18,12 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      {{- if .Values.internalTLS.enabled }}
       volumes:
         - name: server-tls
           secret:
             secretName: lolcatz-search-internal-tls
+      {{- end }}
       containers:
         - name: search
           securityContext:
@@ -31,23 +33,27 @@ spec:
           ports:
             - name: metrics
               containerPort: 9090
-            - name: https
+            - name: {{ include "lolcatz.internalScheme" . }}
               containerPort: 8080
           readinessProbe:
             httpGet:
               path: /health
               port: metrics
+          {{- if .Values.internalTLS.enabled }}
           volumeMounts:
             - name: server-tls
               mountPath: /etc/server-tls
               readOnly: true
+          {{- end }}
           env:
             - name: ROCKET_ADDRESS
               value: "::"
+            {{- if .Values.internalTLS.enabled }}
             - name: TLS_CERT_FILE
               value: /etc/server-tls/tls.crt
             - name: TLS_KEY_FILE
               value: /etc/server-tls/tls.key
+            {{- end }}
             - name: PGSSLMODE
               value: verify-full
             - name: DATABASE_URL

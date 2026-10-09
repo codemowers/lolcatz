@@ -1,5 +1,5 @@
 {{- range $name := list "admin" "browse" "comments" "frontend" "search" "thumbnailer" "uploader" "redis" "redpanda" }}
-{{- if or (ne $name "admin") $.Values.admin.enabled }}
+{{- if and (or $.Values.internalTLS.enabled (has $name (list "redis" "redpanda"))) (or (ne $name "admin") $.Values.admin.enabled) }}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate

@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:18
+        image: postgis/postgis:18-3.6
         env:
           POSTGRES_USER: lolcatz
           POSTGRES_PASSWORD: lolcatz
@@ -36,8 +36,11 @@ jobs:
       - name: Validate Helm chart
         run: |
           helm lint chart
+          helm lint chart --set internalTLS.enabled=true
           helm template lolcatz chart --namespace chart-review >/dev/null
           helm template lolcatz chart --namespace chart-review --set admin.enabled=false >/dev/null
+          helm template lolcatz chart --namespace chart-review --set internalTLS.enabled=true >/dev/null
+          helm template lolcatz chart --namespace chart-review --set internalTLS.enabled=true,admin.enabled=false >/dev/null
       - uses: actions/setup-go@v6
         with:
           go-version: '1.26'
