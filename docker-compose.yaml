@@ -391,7 +391,8 @@ services:
         read_only: true
     build:
       context: .
-      dockerfile: services/Dockerfile.tagger
+      dockerfile: services/Dockerfile.python
+      target: tagger
     restart: unless-stopped
     environment:
       KAFKA_BROKERS: redpanda:29092
@@ -406,7 +407,8 @@ services:
   ocr:
     build:
       context: .
-      dockerfile: services/Dockerfile.ocr
+      dockerfile: services/Dockerfile.python
+      target: ocr
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://lolcatz:lolcatz@postgres:5432/lolcatz?sslmode=disable
@@ -435,7 +437,8 @@ services:
       retries: 10
     build:
       context: .
-      dockerfile: services/Dockerfile.thumbnailer
+      dockerfile: services/Dockerfile.python
+      target: thumbnailer
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://lolcatz:lolcatz@postgres:5432/lolcatz?sslmode=disable

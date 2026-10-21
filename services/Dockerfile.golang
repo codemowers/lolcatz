@@ -1,7 +1,7 @@
 FROM golang:1.26-alpine AS source
 WORKDIR /app
 COPY services/go.mod services/go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY services/internal ./internal
 COPY services/admin ./admin
 COPY services/browse ./browse
@@ -10,11 +10,16 @@ COPY services/exif ./exif
 COPY services/uploader ./uploader
 
 FROM source AS tests
+# Runtime test commands cannot access BuildKit cache mounts.
+RUN --mount=type=cache,target=/go/pkg/mod \
+    cp -a /go/pkg/mod /go/pkg/test-mod
+ENV GOMODCACHE=/go/pkg/test-mod
 CMD ["go", "test", "./..."]
 
 FROM source AS build
 ARG SERVICE
-RUN --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
     test -n "$SERVICE" && CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/server "./$SERVICE"
 
 FROM alpine:3.20 AS runtime

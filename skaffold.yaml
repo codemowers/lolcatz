@@ -10,6 +10,7 @@ build:
     inputDigest: {}
   # Build on your laptop and push using local Docker registry credentials.
   # Configure your context-specific default-repo and registry login (see README.md).
+  # Host networking lets local builds use the host DNS and IPv6 connectivity.
   local:
     concurrency: 0
     push: true
@@ -20,27 +21,34 @@ build:
     - image: lolcatz-uploader
       docker:
         dockerfile: services/Dockerfile.golang
+        network: host
         buildArgs:
           SERVICE: uploader
     - image: lolcatz-browse
       docker:
         dockerfile: services/Dockerfile.golang
+        network: host
         buildArgs:
           SERVICE: browse
     - image: lolcatz-search
       docker:
         dockerfile: services/Dockerfile.search
+        network: host
     - image: lolcatz-comments
       docker:
         dockerfile: services/Dockerfile.golang
+        network: host
         buildArgs:
           SERVICE: comments
     - image: lolcatz-thumbnailer
       docker:
-        dockerfile: services/Dockerfile.thumbnailer
+        dockerfile: services/Dockerfile.python
+        network: host
+        target: thumbnailer
     - image: lolcatz-frontend
       docker:
         dockerfile: services/Dockerfile.frontend
+        network: host
 
 # Inherit the selected kubeconfig context and its namespace.
 # Leave release and port-forward namespaces unset.
@@ -78,6 +86,7 @@ profiles:
           image: lolcatz-admin
           docker:
             dockerfile: services/Dockerfile.golang
+            network: host
             buildArgs:
               SERVICE: admin
       - op: add
@@ -86,6 +95,7 @@ profiles:
           image: lolcatz-exif
           docker:
             dockerfile: services/Dockerfile.golang
+            network: host
             buildArgs:
               SERVICE: exif
       - op: add
@@ -93,19 +103,24 @@ profiles:
         value:
           image: lolcatz-tagger
           docker:
-            dockerfile: services/Dockerfile.tagger
+            dockerfile: services/Dockerfile.python
+            network: host
+            target: tagger
       - op: add
         path: /build/artifacts/-
         value:
           image: lolcatz-tagger-model
           docker:
             dockerfile: services/Dockerfile.tagger-model
+            network: host
       - op: add
         path: /build/artifacts/-
         value:
           image: lolcatz-ocr
           docker:
-            dockerfile: services/Dockerfile.ocr
+            dockerfile: services/Dockerfile.python
+            network: host
+            target: ocr
       - op: add
         path: /manifests/helm/releases/0/setValues/tagger.enabled
         value: true

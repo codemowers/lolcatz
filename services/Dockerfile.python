@@ -1,0 +1,71 @@
+FROM python:3.12-slim AS worker-deps
+ENV PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+WORKDIR /app
+
+# Share the identical locked dependencies without forcing a common Pillow or
+# urllib3 version. Each service completes and validates its own dependency graph.
+COPY services/worker-requirements.lock ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --require-hashes --no-deps -r worker-requirements.lock
+
+FROM worker-deps AS thumbnailer-deps
+COPY services/thumbnailer/requirements.txt services/thumbnailer/requirements.lock ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --require-hashes -r requirements.lock \
+    && pip install --no-index --no-deps -r requirements.txt \
+    && pip check \
+    && python -c 'from PIL import features; assert features.check_feature("libjpeg_turbo")'
+
+FROM worker-deps AS ocr-deps
+# Debian's docker-clean hook removes downloaded archives; disable it so the
+# BuildKit cache retains them. apt requires exclusive access to both caches.
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        libglib2.0-0 \
+        tesseract-ocr \
+        tesseract-ocr-eng
+COPY services/ocr/requirements.txt services/ocr/requirements.lock ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --require-hashes -r requirements.lock \
+    && pip install --no-index --no-deps -r requirements.txt \
+    && pip check
+
+FROM worker-deps AS tagger-deps
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        libgl1 \
+        libglib2.0-0
+COPY services/tagger/requirements.txt services/tagger/requirements.lock ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --require-hashes -r requirements.lock \
+    && pip install --no-index --no-deps -r requirements.txt \
+    && pip check
+
+# Application sources come after all downloads so source edits reuse dependencies.
+FROM ocr-deps AS ocr
+COPY services/worker_runtime.py services/metrics.py services/image_input.py ./
+COPY --chmod=0644 services/ocr/ocr.py ./
+ENV OMP_THREAD_LIMIT=1
+CMD ["python", "ocr.py"]
+
+FROM tagger-deps AS tagger
+COPY services/worker_runtime.py services/metrics.py services/image_input.py ./
+COPY --chmod=0644 services/tagger/tagger.py ./
+ENV MPLCONFIGDIR=/tmp \
+    YOLO_CONFIG_DIR=/tmp \
+    YOLO_MODEL_PATH=/models/yolov8n.pt
+CMD ["python", "tagger.py"]
+
+# The default target is the lightweight service used by the default Skaffold profile.
+FROM thumbnailer-deps AS thumbnailer
+COPY services/worker_runtime.py services/metrics.py ./
+COPY --chmod=0644 services/thumbnailer/server.py services/thumbnailer/app.py services/thumbnailer/cache.py services/thumbnailer/thumbnail.py services/thumbnailer/worker.py ./
+EXPOSE 8080
+CMD ["python", "server.py"]

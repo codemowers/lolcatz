@@ -2,20 +2,25 @@ FROM rust:1.94.1-alpine AS source
 RUN apk add --no-cache musl-dev ca-certificates
 WORKDIR /app
 COPY services/search/Cargo.toml services/search/Cargo.lock ./
+# Cargo needs a target to parse the manifest, but fetching only depends on locks.
+RUN --mount=type=cache,target=/usr/local/cargo/registry/cache,sharing=locked \
+    mkdir src && touch src/main.rs \
+    && cargo fetch --locked --target "$(rustc -vV | sed -n 's/^host: //p')"
 COPY services/search/src ./src
-RUN cargo fetch --locked
 COPY services/search/tests ./tests
 COPY services/search/Rocket.toml ./
 # Integration tests use the complete core schema.
 COPY services/uploader/schema.sql /schemas/uploader.sql
 
 FROM source AS tests
-RUN cargo test --locked --no-run
+RUN --mount=type=cache,target=/usr/local/cargo/registry/cache,sharing=locked \
+    cargo test --locked --no-run
 ENV SEARCH_TEST_SCHEMA_DIR=/schemas
 CMD ["cargo", "test", "--locked"]
 
 FROM source AS build
-RUN cargo build --locked --release
+RUN --mount=type=cache,target=/usr/local/cargo/registry/cache,sharing=locked \
+    cargo build --locked --release
 
 FROM scratch AS runtime
 ENV ROCKET_CONFIG=/app/Rocket.toml
