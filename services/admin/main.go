@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err = db.Ping(); err != nil {
+	if err = platform.PingDatabase(db); err != nil {
 		log.Fatal(err)
 	}
 	cache = redis.NewClient(&redis.Options{Addr: getEnv("REDIS_ADDR", "lolcatz-redis:6379"), Password: os.Getenv("REDIS_PASSWORD"), TLSConfig: platform.ClientTLS(os.Getenv("REDIS_TLS") == "true")})

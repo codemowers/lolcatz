@@ -23,11 +23,37 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await??;
         return Ok(());
     }
-    let pool = PgPoolOptions::new()
-        .max_connections(10)
-        .acquire_timeout(Duration::from_secs(10))
-        .connect(&env::var("DATABASE_URL")?)
-        .await?;
+    let database_url = env::var("DATABASE_URL")?;
+    let pool = tokio::time::timeout(Duration::from_secs(120), async {
+        let mut attempt = 0;
+        loop {
+            attempt += 1;
+            match PgPoolOptions::new()
+                .max_connections(10)
+                .acquire_timeout(Duration::from_secs(5))
+                .connect(&database_url)
+                .await
+            {
+                Ok(pool) => return Ok(pool),
+                Err(error) => {
+                    let retryable = match &error {
+                        sqlx::Error::Io(_) | sqlx::Error::PoolTimedOut => true,
+                        sqlx::Error::Database(error) => error.code().is_some_and(|code| {
+                            code.starts_with("08") || code == "57P03" || code == "53300"
+                        }),
+                        _ => false,
+                    };
+                    if !retryable {
+                        return Err(error);
+                    }
+                    eprintln!("database not ready (attempt {attempt}); retrying in 2s: {error}");
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                }
+            }
+        }
+    })
+    .await
+    .map_err(|_| "database startup retry budget exhausted after 120s")??;
     let metrics = Metrics::new()?;
     let mut config = rocket::Config::from(rocket::Config::figment());
     config.port = env::var("PORT").unwrap_or_else(|_| "8080".into()).parse()?;

@@ -96,7 +96,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("db open: %v", err)
 	}
-	if err = db.Ping(); err != nil {
+	if err = platform.PingDatabase(db); err != nil {
 		log.Fatalf("db ping: %v", err)
 	}
 	// The database operator may still be installing PostGIS on a fresh install.

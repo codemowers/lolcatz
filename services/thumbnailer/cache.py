@@ -7,6 +7,7 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from PIL import features
+from psycopg2 import OperationalError
 from psycopg2.pool import ThreadedConnectionPool
 
 from thumbnail import InvalidImage, SIZES, make_thumbnails, object_key
@@ -22,7 +23,15 @@ class ThumbnailCache:
     def __init__(self):
         if not features.check_feature("libjpeg_turbo"):
             raise RuntimeError("thumbnailer requires libjpeg-turbo")
-        self.pool = ThreadedConnectionPool(1, 1, os.environ["DATABASE_URL"])
+        for attempt in range(1, 31):
+            try:
+                self.pool = ThreadedConnectionPool(1, 1, os.environ["DATABASE_URL"], connect_timeout=2)
+                break
+            except OperationalError as error:
+                if attempt == 30:
+                    raise
+                log.warning("database not ready (attempt %s/30); retrying in 2s: %s", attempt, error)
+                time.sleep(2)
         options = dict(
             aws_access_key_id=os.environ["S3_ACCESS_KEY"],
             aws_secret_access_key=os.environ["S3_SECRET_KEY"],
