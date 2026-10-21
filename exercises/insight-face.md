@@ -32,7 +32,7 @@ The application already provides:
 
 - The frontend can draw all YOLO bounding boxes with labels and confidence
   scores on board cards, search results and thread images.
-- `services/tagger/schema.sql`: one `image_annotations` row per detection, with
+- `services/uploader/schema.sql`: one `image_annotations` row per detection, with
   a numeric ID, image ID, label, confidence, normalized coordinates and producer
   version. Browse/search aggregate these rows into public tags.
 - `services/tagger/tagger.py`: publishes all annotations after storing them.
@@ -116,8 +116,9 @@ still current.
    `{{- if .Values.insightface.enabled }}` / `{{- end }}` so the default chart
    remains usable with your local files present.
 8. Register both images in the default Skaffold build as described below and
-   set `insightface.enabled: true` in `chart/values.yaml`. Then run `skaffold dev`
-   and verify processing, replay and similarity search using your test images.
+   set `insightface.enabled: true` in `chart/values.yaml`. Then run
+   `skaffold dev -p full`, which also deploys the tagger, and verify processing,
+   replay and similarity search using your test images.
 
 ## Similarity API
 
@@ -144,7 +145,7 @@ Compute similarity as `1 - cosine_distance` using pgvector's `<=>` operator,
 and order by ascending distance. The score is not a probability. Default the
 limit to 20 and bound it to 1–100. Return HTTP 400 for invalid input and an empty
 results list when the requested annotation has no embedding. Never serialize
-the vector itself. The base frontend and gateway do not expose this endpoint;
+the vector itself. The base frontend and Ingress do not expose this endpoint;
 use a port-forward for the exercise.
 
 ## Deployment configuration
@@ -155,18 +156,27 @@ resource limits and the read-only root filesystem. Configure the worker with:
 | Variable | Value or source |
 |---|---|
 | `DATABASE_URL` | `lolcatz-database-app` Secret, key `uri` |
-| `KAFKA_BROKERS` | `lolcatz-redpanda.lolcatz.svc.cluster.local:9093` |
+| `PGSSLMODE` | `verify-full` |
+| `KAFKA_BROKERS` | `lolcatz-redpanda.{{ .Release.Namespace }}.svc.cluster.local:9093` |
+| `KAFKA_TLS` | `true` |
+| `KAFKA_USERNAME` | `lolcatz-insightface` |
+| `KAFKA_PASSWORD` | `lolcatz-insightface-kafka` Secret, key `password` |
 | `KAFKA_TOPIC` | `lolcatz-tags` |
 | `KAFKA_GROUP` | `lolcatz-insightface` |
-| `S3_ENDPOINT` | `http://minio.minio.svc.cluster.local:9000` |
-| `S3_BUCKET` | `{{ .Release.Namespace }}-images` |
-| `S3_ACCESS_KEY` | `lolcatz-images` Secret, key `accessKey` |
-| `S3_SECRET_KEY` | `lolcatz-images` Secret, key `secretKey` |
+| `S3_REGION` | `lolcatz-storage` Secret, key `region` |
+| `S3_ENDPOINT` | `lolcatz-storage` Secret, key `publicEndpoint` |
+| `S3_USE_SSL` | `true` |
+| `S3_BUCKET` | `{{ .Release.Namespace }}.lolcatz` |
+| `S3_ACCESS_KEY` | `lolcatz-storage` Secret, key `accessKey` |
+| `S3_SECRET_KEY` | `lolcatz-storage` Secret, key `secretKey` |
 | `INSIGHTFACE_MODEL` | `buffalo_l` |
 | `INSIGHTFACE_ROOT` | `/` when weights are at `/models/buffalo_l/` |
 | `ORT_PROVIDER` | `CPUExecutionProvider` |
 | `MPLCONFIGDIR` | `/tmp/matplotlib` |
 | `PORT` | `8080` |
+
+Add `insightface` to the Redpanda users in `chart/templates/kafka-users.yaml`;
+its `insightface.enabled` guard keeps the user out of the default chart.
 
 Use `.Values.insightface.image` for the worker and
 `.Values.insightfaceModel.image` for the model image volume. Put `buffalo_l/` at
@@ -177,7 +187,8 @@ Prepackage the weights so startup does not need a download. Provide a writable `
 at `/tmp`. Start with a 1 GiB memory request and 3 GiB limit, then measure usage.
 
 Once the local source and templates exist, add these entries to the existing
-`build.artifacts` list in `skaffold.yaml` (the registry comes from your context’s `default-repo`; see README.md):
+`build.artifacts` list in `skaffold.yaml` (Skaffold prefixes the names with
+`SKAFFOLD_DEFAULT_REPO` from `skaffold.env`):
 
 ```yaml
 - image: lolcatz-insightface
@@ -196,19 +207,21 @@ insightface.image: "{{.IMAGE_FULLY_QUALIFIED_lolcatz_insightface}}"
 insightfaceModel.image: "{{.IMAGE_FULLY_QUALIFIED_lolcatz_insightface_model}}"
 ```
 
-With `insightface.enabled: true` in `chart/values.yaml`, ordinary `skaffold dev`
-builds and deploys the completed exercise along with the application. No profile
-or concurrency option is required.
+With `insightface.enabled: true` in `chart/values.yaml`, `skaffold dev -p full`
+builds and deploys the completed exercise along with the tagger it consumes.
+A small sandbox's quota (4Gi memory requests, 8Gi limits) does not fit this
+worker on top of `-p full`; on your branch, drop the `full` profile patches that
+enable admin, EXIF, OCR and the thumbnail worker.
 
 ```sh
 # Validate the chart including your templates.
 helm template lolcatz chart
 
-# Build the base application plus the worker and model, and enable the templates.
-skaffold dev
+# Build the base application, the tagger, the worker and model.
+skaffold dev -p full
 
-# In another terminal:
-kubectl -n lolcatz port-forward svc/lolcatz-insightface 8085:8080
+# In another terminal, in the sandbox context and namespace:
+kubectl port-forward svc/lolcatz-insightface 8085:8080
 curl http://localhost:8085/api/insightface/similar \
   -H 'Content-Type: application/json' \
   -d '{"annotation_id":42,"limit":20}'
@@ -230,8 +243,8 @@ while their source remains ignored.
 ## Acceptance criteria
 
 - The default application builds and renders without any exercise source files.
-- After registering the completed implementation, `skaffold dev` builds both
-  exercise images alongside the base services without extra flags.
+- After registering the completed implementation, `skaffold dev -p full` builds
+  both exercise images alongside the tagger and base services.
 - A visible face produces one normalized 512-dimensional vector; a crop without
   a face produces none.
 - Processing the same current event twice leaves one row per annotation.
@@ -244,5 +257,5 @@ while their source remains ignored.
   rebuilds embeddings for current annotations. Replaying the tagger first
   generates fresh jobs when the annotation set needs rebuilding.
 
-For replay commands, follow the README's consumer-group reset procedure using
-`lolcatz-insightface` as both Deployment name and consumer group.
+For replay commands, follow the [replay procedure](README.md#image-processing)
+using `lolcatz-insightface` as both Deployment name and consumer group.

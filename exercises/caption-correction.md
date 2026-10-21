@@ -48,6 +48,8 @@ so a vision-capable model is not required.
 
 ## Existing inputs
 
+OCR and the YOLO tagger are deployed only by `skaffold dev -p full`.
+
 ```text
                            ┌─ OCR ── image_ocr ───────────┐
 Upload → lolcatz-images ────┤                             ├→ lolcatz-caption-inputs
@@ -59,12 +61,12 @@ Upload → lolcatz-images ────┤                             ├→ lol
                                                          image_captions
 ```
 
-- `services/ocr/schema.sql`: `image_ocr.text` contains the original sanitized
-  Tesseract output; `derived_title` is its first nonempty line. The row records
-  `language`, `producer_version` and `processed_at`.
-- `services/tagger/schema.sql`: `image_annotations` contains one row per
-  detection, with `label`, `confidence`, `x1`, `y1`, `x2`, `y2` and producer
-  metadata. Coordinates are normalized to `[0, 1]` relative to the EXIF-oriented
+- `services/uploader/schema.sql` holds the fresh-install schema for all tables.
+  `image_ocr.text` contains the original sanitized Tesseract output;
+  `derived_title` is its first nonempty line. The row records `language`,
+  `producer_version` and `processed_at`.
+- `image_annotations` contains one row per detection, with `label`,
+  `confidence`, `x1`, `y1`, `x2`, `y2` and producer metadata. Coordinates are normalized to `[0, 1]` relative to the EXIF-oriented
   image. Keep separate boxes for repeated objects instead of aggregating labels.
 - `images.title` is the uploader's title. The current display falls back to
   `image_ocr.derived_title` when the uploader's title is blank.
@@ -80,7 +82,8 @@ so check that they are still current before using them.
 ## Participant tasks
 
 1. Create `services/captioner/` with a worker and dependencies, plus `services/Dockerfile.captioner`
-   and service-owned schema. Start with one worker and one concurrent LLM request.
+   and its tables in `services/uploader/schema.sql`. Start with one worker and
+   one concurrent LLM request.
 2. Add a durable YOLO completion record per image, written in the same transaction
    as annotation replacement, including successful runs with zero detections.
    Record a revision and producer version. Reprocess older images to establish
@@ -90,8 +93,9 @@ so check that they are still current before using them.
    Key messages by image ID and consume with group `lolcatz-captioner`. Use a
    transactional outbox so committing source data and recording its notification
    cannot be separated by a crash; deliver outbox entries with broker delivery
-   confirmation. Duplicate notifications are acceptable. Backfill notifications
-   for existing completed inputs.
+   confirmation. OCR's Redpanda user in `chart/templates/kafka-users.yaml` needs
+   write access to the new topic. Duplicate notifications are acceptable.
+   Backfill notifications for existing completed inputs.
 4. On each notification, read both current inputs from the database. If one is
    unfinished, acknowledge the notification: the other producer's completion
    will trigger another check. Hash the original OCR, language, ordered detection
@@ -171,8 +175,8 @@ shutdown, stop accepting work and either finish the current request within the
 termination grace period or leave its offset uncommitted for replay.
 
 To reprocess after changing the model or prompt version, stop the consumer and
-reset its group using the README's replay procedure, substituting
-`lolcatz-captioner` for the Deployment/group and `lolcatz-caption-inputs` for the
+reset its group using the [replay procedure](README.md#image-processing),
+substituting `lolcatz-captioner` for the Deployment/group and `lolcatz-caption-inputs` for the
 topic. Replayed notifications will read current source data.
 
 ## Prompt and response contract
@@ -219,12 +223,13 @@ the extra context actually improves the correction.
 ## Deployment and Skaffold
 
 Add an optional `captioner` section to `chart/values.yaml` with `enabled: false`,
-image `ghcr.io/codemowers/lolcatz-captioner:latest`, and configurable LLM base URL
-and model ID. Write `chart/templates/captioner-deployment.yaml`, guarded by
+image `lolcatz-captioner:latest`, and configurable LLM base URL and model ID. Write `chart/templates/captioner-deployment.yaml`, guarded by
 `.Values.captioner.enabled`. Follow existing workers for database credentials,
-pull secrets, resource limits and a read-only root filesystem. Configure
-`KAFKA_BROKERS` from the existing workers, `KAFKA_TOPIC=lolcatz-caption-inputs`,
-`KAFKA_GROUP=lolcatz-captioner`, and the timeout defaults above. This is a
+pull secrets, resource limits and a read-only root filesystem. Add `captioner`
+to the Redpanda users in `chart/templates/kafka-users.yaml` and configure
+`KAFKA_BROKERS` and Kafka credentials as the existing workers do,
+`KAFKA_TOPIC=lolcatz-caption-inputs`, `KAFKA_GROUP=lolcatz-captioner`, and the
+timeout defaults above. This is a
 background consumer; it needs no HTTP Service or Ingress. Keep the worker
 disabled until its implementation and selected model configuration are ready.
 
@@ -236,15 +241,16 @@ Once the source exists, add this Skaffold artifact:
     dockerfile: services/Dockerfile.captioner
 ```
 
-Add this entry to the Helm release's `setValues`:
+Skaffold prefixes the short image name with `SKAFFOLD_DEFAULT_REPO` from
+`skaffold.env`. Enable the worker by adding this entry to the Helm release's
+`setValues`:
 
 ```yaml
-captioner.image: lolcatz-captioner
+captioner.enabled: true
 ```
 
-Your context's `default-repo` supplies the registry namespace, as described in
-the README. Enable the worker and use `skaffold dev`. Keep it out of the default
-CI image matrix until its implementation is included in the repository.
+Use `skaffold dev -p full`, which also deploys the OCR and YOLO workers. Keep it
+out of the default CI image matrix until its implementation is included in the repository.
 
 ## Acceptance criteria
 
