@@ -3,7 +3,10 @@
 This repository is an example of an ideal cloud/Kubernetes-native application,
 not a production system that must preserve existing installations or data.
 
-Refer to [mcp.codemowers.io](https://mcp.codemowers.io) for Codemowers platform guidance.
+Connect your agent to [mcp.codemowers.io](https://mcp.codemowers.io) for general
+engineering guidance and to
+[mcp.driftmower.aws-us-west-2-bravo.codemowers.io](https://mcp.driftmower.aws-us-west-2-bravo.codemowers.io/)
+for platform guidance.
 
 - Data loss is permitted. Prefer a clean, declarative desired state and
   recreatable infrastructure over preserving historical state.
