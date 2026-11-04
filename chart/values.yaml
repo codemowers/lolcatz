@@ -155,3 +155,6 @@ redpanda:
       cpu: "1"
       memory: 1Gi
 
+monitoring:
+  # Namespace of the Prometheus pods allowed to scrape Dragonfly admin port.
+  namespace: monitoring

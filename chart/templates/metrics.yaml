@@ -22,4 +22,77 @@ spec:
           replacement: {{ $name }}
 {{- end }}
 {{- end }}
+---
+# CloudNativePG exporter (plain HTTP on the instance "metrics" port, 9187).
+# Hand-written because Cluster.spec.monitoring.enablePodMonitor is deprecated.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: lolcatz-database
+  labels:
+    app.kubernetes.io/part-of: lolcatz
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: lolcatz-database
+      cnpg.io/podRole: instance
+  podMetricsEndpoints:
+    - port: metrics
+      relabelings:
+        - targetLabel: application
+          replacement: lolcatz
+        - targetLabel: component
+          replacement: database
+---
+# Dragonfly serves /metrics on its admin port, which the operator runs without
+# TLS (the primary port is TLS-only with HTTP disabled).
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: lolcatz-redis
+  labels:
+    app.kubernetes.io/part-of: lolcatz
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app: lolcatz-redis
+      app.kubernetes.io/name: dragonfly
+  podMetricsEndpoints:
+    - port: admin
+      path: /metrics
+      relabelings:
+        - targetLabel: application
+          replacement: lolcatz
+        - targetLabel: component
+          replacement: redis
+---
+# The operator-managed NetworkPolicy only admits the operator and peers on the
+# admin port; policies are additive, so let Prometheus in for scraping.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lolcatz-redis-metrics
+  labels:
+    app.kubernetes.io/part-of: lolcatz
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: lolcatz-redis
+      app.kubernetes.io/name: dragonfly
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.monitoring.namespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - port: 9999
+          protocol: TCP
 {{- end }}
